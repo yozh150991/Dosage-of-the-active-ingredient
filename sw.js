@@ -1,9 +1,10 @@
 /* Кеш офлайн-оболонки. Версію змінюйте при кожному релізі — інакше
    у батьків залишиться стара логіка розрахунку. */
-const CACHE = "doza-v0.2.0";
+const CACHE = "doza-v0.3.0";
 const ASSETS = [
   "./",
   "./index.html",
+  "./calc-core.js",
   "./manifest.webmanifest",
   "./icon-192.png",
   "./icon-512.png",

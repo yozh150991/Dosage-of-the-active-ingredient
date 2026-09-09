@@ -1,0 +1,9 @@
+{
+  "name": "doza-dytyni",
+  "version": "0.3.0",
+  "description": "Калькулятор дози жарознижувального за вагою дитини",
+  "private": true,
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  }
+}
