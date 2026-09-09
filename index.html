@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Доза для дитини — калькулятор жарознижувального</title>
+<meta name="description" content="Розрахунок разової дози парацетамолу та ібупрофену за вагою дитини. Працює офлайн, нічого не зберігає.">
+<meta name="theme-color" content="#0E5A63">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --paper:#F7F9FA;
+  --card:#FFFFFF;
+  --ink:#16262C;
+  --ink-soft:#5A6B72;
+  --line:#D8E1E4;
+  --petrol:#0E5A63;
+  --petrol-soft:#E3F0F1;
+  --amber:#8A5A08;
+  --amber-soft:#FBF0DC;
+  --indigo:#33478F;
+  --indigo-soft:#E6EAF7;
+  --danger:#9E1B2F;
+  --danger-soft:#FBE7E9;
+  --warn-soft:#FDF3DE;
+  --warn-line:#E0B563;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#101A1E;
+    --card:#17252A;
+    --ink:#EAF1F2;
+    --ink-soft:#9CB0B6;
+    --line:#2A3D44;
+    --petrol:#6FD3DA;
+    --petrol-soft:#123840;
+    --amber:#EBB765;
+    --amber-soft:#33280F;
+    --indigo:#A9B8F0;
+    --indigo-soft:#1C2340;
+    --danger:#FF9AA6;
+    --danger-soft:#3A1A20;
+    --warn-soft:#332810;
+    --warn-line:#7A5C22;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:17px;
+  line-height:1.5;
+  font-variant-numeric:tabular-nums;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:640px;margin:0 auto;padding:16px 16px 64px}
+header{padding:8px 0 4px}
+h1{font-size:1.32rem;line-height:1.25;margin:0 0 4px;letter-spacing:-0.01em}
+.sub{color:var(--ink-soft);font-size:0.9rem;margin:0}
+
+nav{display:flex;gap:6px;margin:16px 0 18px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px}
+nav button{
+  flex:1;appearance:none;border:0;background:transparent;color:var(--ink-soft);
+  font:inherit;font-size:0.92rem;padding:9px 4px;border-radius:9px;cursor:pointer;
+}
+nav button[aria-selected="true"]{background:var(--petrol);color:#fff;font-weight:600}
+nav button:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--petrol);outline-offset:2px}
+
+.panel[hidden]{display:none}
+fieldset{border:0;padding:0;margin:0 0 18px}
+legend{font-size:0.86rem;color:var(--ink-soft);padding:0;margin-bottom:8px}
+label{display:block;font-size:0.86rem;color:var(--ink-soft);margin-bottom:6px}
+input[type=number],input[type=time],select{
+  width:100%;font:inherit;padding:12px 12px;border:1px solid var(--line);
+  border-radius:11px;background:var(--card);color:var(--ink);
+}
+input[type=number]{font-size:1.25rem;font-weight:600}
+.row{display:flex;gap:10px}
+.row>*{flex:1}
+.row .narrow{flex:0 0 42%}
+
+.seg{display:flex;gap:10px}
+.seg button{
+  flex:1;font:inherit;padding:14px 8px;border-radius:12px;cursor:pointer;
+  border:1.5px solid var(--line);background:var(--card);color:var(--ink);
+  display:flex;flex-direction:column;gap:2px;align-items:flex-start;text-align:left;
+}
+.seg button span{font-size:0.78rem;color:var(--ink-soft)}
+.seg button[aria-pressed="true"]{border-width:2px;font-weight:600}
+#btn-paracetamol[aria-pressed="true"]{border-color:var(--amber);background:var(--amber-soft)}
+#btn-ibuprofen[aria-pressed="true"]{border-color:var(--indigo);background:var(--indigo-soft)}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{
+  font:inherit;font-size:0.88rem;padding:9px 12px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--line);background:var(--card);color:var(--ink);
+}
+.chips button[aria-pressed="true"]{background:var(--petrol);border-color:var(--petrol);color:#fff}
+
+.result{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px;margin:4px 0 16px;
+}
+.result.empty{color:var(--ink-soft);font-size:0.95rem;text-align:center;padding:26px 18px}
+.dose{font-size:3rem;line-height:1;font-weight:700;letter-spacing:-0.03em;margin:2px 0 2px}
+.dose small{font-size:1.1rem;font-weight:600;letter-spacing:0}
+.dose-mg{color:var(--ink-soft);font-size:1rem;margin:0 0 14px}
+.facts{border-top:1px solid var(--line);margin-top:4px}
+.facts div{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--line);font-size:0.95rem}
+.facts div:last-child{border-bottom:0}
+.facts dt{color:var(--ink-soft);margin:0}
+.facts dd{margin:0;text-align:right;font-weight:600}
+
+.ladder{margin:14px 0 2px}
+.ladder-bar{position:relative;height:10px;border-radius:6px;background:var(--line)}
+.ladder-safe{position:absolute;top:0;bottom:0;border-radius:6px;background:var(--petrol);opacity:.35}
+.ladder-mark{position:absolute;top:-4px;width:4px;height:18px;border-radius:2px;background:var(--petrol)}
+.ladder-scale{display:flex;justify-content:space-between;font-size:0.76rem;color:var(--ink-soft);margin-top:6px}
+
+.note{border-radius:12px;padding:12px 14px;margin:10px 0;font-size:0.92rem;border:1px solid}
+.note.danger{background:var(--danger-soft);border-color:var(--danger);color:var(--ink)}
+.note.danger strong{color:var(--danger)}
+.note.warn{background:var(--warn-soft);border-color:var(--warn-line)}
+.note.info{background:var(--card);border-color:var(--line);color:var(--ink-soft)}
+
+details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:12px 0}
+summary{cursor:pointer;font-weight:600;font-size:0.95rem}
+details ul{margin:10px 0 0;padding-left:20px}
+details li{margin-bottom:6px;font-size:0.92rem}
+
+.ghost{
+  width:100%;font:inherit;padding:12px;border-radius:11px;cursor:pointer;
+  border:1px solid var(--line);background:transparent;color:var(--ink-soft);
+}
+h2{font-size:1.05rem;margin:22px 0 8px}
+table{width:100%;border-collapse:collapse;font-size:0.9rem;margin:8px 0 16px}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--ink-soft);font-weight:600}
+a{color:var(--petrol)}
+footer{color:var(--ink-soft);font-size:0.8rem;margin-top:26px;line-height:1.45}
+@media (prefers-reduced-motion:no-preference){
+  .result{transition:border-color .2s ease}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Скільки давати дитині</h1>
+  <p class="sub">Разова доза парацетамолу та ібупрофену за вагою. Працює офлайн, дані нікуди не надсилаються.</p>
+</header>
+
+<nav role="tablist" aria-label="Розділи">
+  <button role="tab" id="tab-dose" aria-controls="panel-dose" aria-selected="true">Доза</button>
+  <button role="tab" id="tab-alt" aria-controls="panel-alt" aria-selected="false">Наступний прийом</button>
+  <button role="tab" id="tab-ref" aria-controls="panel-ref" aria-selected="false">Джерела</button>
+</nav>
+
+<!-- ───────────── ДОЗА ───────────── -->
+<section class="panel" id="panel-dose" role="tabpanel" aria-labelledby="tab-dose">
+
+  <fieldset>
+    <legend>Дитина</legend>
+    <div class="row">
+      <div>
+        <label for="weight">Вага, кг</label>
+        <input type="number" id="weight" inputmode="decimal" min="2" max="120" step="0.1" placeholder="12,5">
+      </div>
+      <div class="narrow">
+        <label for="age">Вік</label>
+        <input type="number" id="age" inputmode="numeric" min="0" max="215" step="1" placeholder="3">
+      </div>
+      <div class="narrow">
+        <label for="ageUnit">&nbsp;</label>
+        <select id="ageUnit">
+          <option value="months">місяців</option>
+          <option value="years" selected>років</option>
+        </select>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Препарат</legend>
+    <div class="seg">
+      <button type="button" id="btn-paracetamol" aria-pressed="true">Парацетамол<span>10–15 мг/кг</span></button>
+      <button type="button" id="btn-ibuprofen" aria-pressed="false">Ібупрофен<span>5–10 мг/кг</span></button>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Форма випуску</legend>
+    <div class="chips" id="formChips">
+      <button type="button" data-form="syrup" aria-pressed="true">Сироп</button>
+      <button type="button" data-form="supp" aria-pressed="false">Свічки</button>
+      <button type="button" data-form="tab" aria-pressed="false">Таблетки</button>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend id="concLegend">Дозування на упаковці</legend>
+    <label for="preset">Готовий варіант</label>
+    <select id="preset"></select>
+    <div class="row" id="customRow" style="margin-top:10px">
+      <div>
+        <label for="concMg" id="concMgLabel">мг</label>
+        <input type="number" id="concMg" inputmode="decimal" min="1" max="1000" step="1">
+      </div>
+      <div id="concVolWrap">
+        <label for="concMl">на мл</label>
+        <input type="number" id="concMl" inputmode="decimal" min="1" max="20" step="0.5" value="5">
+      </div>
+    </div>
+  </fieldset>
+
+  <div id="result" class="result empty">Введіть вагу — покажу разову дозу.</div>
+  <div id="warnings"></div>
+
+  <button type="button" class="ghost" id="reset">Очистити</button>
+
+  <details>
+    <summary>Коли не рахувати дозу, а звертатися по допомогу</summary>
+    <ul>
+      <li>Дитині менше 3 місяців і температура 38 °C і вище.</li>
+      <li>Висип, який не бліднішає, якщо натиснути на нього склянкою.</li>
+      <li>Судоми, надмірна млявість, дитину важко розбудити, безперервний плач.</li>
+      <li>Утруднене або часте дихання, западання міжребер'їв, стогін на видиху.</li>
+      <li>Ознаки зневоднення: сухі губи, немає сліз, мало сечі, запалий тім'ячко.</li>
+      <li>Температура тримається понад 3 доби або стан погіршується.</li>
+      <li>Ви дали більше дози, ніж потрібно — телефонуйте 103 або до токсикологічного центру, навіть якщо дитина виглядає добре.</li>
+    </ul>
+  </details>
+</section>
+
+<!-- ───────────── ЧЕРГУВАННЯ ───────────── -->
+<section class="panel" id="panel-alt" role="tabpanel" aria-labelledby="tab-alt" hidden>
+  <div class="note warn">
+    <strong>Чергування — не розклад за годинником.</strong> NICE радить давати щось одне, поки дитині некомфортно;
+    міняти препарат, якщо перший не допоміг; і чергувати лише тоді, коли дискомфорт повертається раніше,
+    ніж настав час наступної дози. Одночасно два препарати не дають.
+  </div>
+
+  <fieldset>
+    <legend>Коли була остання доза</legend>
+    <div class="row">
+      <div>
+        <label for="lastP">Парацетамол</label>
+        <input type="time" id="lastP">
+      </div>
+      <div>
+        <label for="lastI">Ібупрофен</label>
+        <input type="time" id="lastI">
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div>
+        <label for="cntP">Доз парацетамолу за добу</label>
+        <input type="number" id="cntP" inputmode="numeric" min="0" max="8" step="1" value="0">
+      </div>
+      <div>
+        <label for="cntI">Доз ібупрофену за добу</label>
+        <input type="number" id="cntI" inputmode="numeric" min="0" max="8" step="1" value="0">
+      </div>
+    </div>
+  </fieldset>
+
+  <div id="altResult" class="result empty">Вкажіть час останньої дози — порахую, коли можна наступну.</div>
+  <p class="sub">Час не зберігається: якщо закрити сторінку, поля будуть порожні.</p>
+</section>
+
+<!-- ───────────── ДЖЕРЕЛА ───────────── -->
+<section class="panel" id="panel-ref" role="tabpanel" aria-labelledby="tab-ref" hidden>
+  <h2>Формули, за якими рахує калькулятор</h2>
+  <table>
+    <tr><th></th><th>Парацетамол</th><th>Ібупрофен</th></tr>
+    <tr><td>Разова доза</td><td>10–15 мг/кг</td><td>5–10 мг/кг</td></tr>
+    <tr><td>Інтервал</td><td>кожні 4–6 год</td><td>кожні 6–8 год</td></tr>
+    <tr><td>Прийомів на добу</td><td>до 4</td><td>до 3</td></tr>
+    <tr><td>Максимум на добу</td><td>60 мг/кг, не більше 4 г</td><td>30 мг/кг, не більше 1200 мг</td></tr>
+    <tr><td>Стеля разової дози</td><td>1000 мг</td><td>400 мг</td></tr>
+    <tr><td>З якого віку</td><td>від 3 місяців без лікаря</td><td>від 3 місяців і 5 кг, до 6 місяців — з лікарем</td></tr>
+  </table>
+  <p class="sub">Для ібупрофену взято обережнішу європейську добову межу 30 мг/кг. Частина джерел (США) допускає до 40 мг/кг на добу.</p>
+
+  <h2>На чому це базується</h2>
+  <ul>
+    <li>BNF for Children — вікові та вагові дози парацетамолу, добова межа 60 мг/кг.</li>
+    <li>NICE NG143 «Fever in under 5s» — лікуємо дискомфорт дитини, а не цифру на градуснику; два препарати одночасно не дають; чергування лише за потреби.</li>
+    <li>WHO Pocket Book of Hospital Care for Children — парацетамол 10–15 мг/кг.</li>
+    <li>MHRA / Toxbase — токсичність парацетамолу починається з 75–150 мг/кг на добу; звідси жорсткий контроль добової суми.</li>
+    <li>Інструкція виробника вашої упаковки — вона головніша за будь-який калькулятор.</li>
+  </ul>
+
+  <h2>Про що калькулятор не знає</h2>
+  <ul>
+    <li>Хвороби печінки чи нирок, зневоднення, вітряна віспа, астма з непереносимістю НПЗЗ, вади серця, недоношеність.</li>
+    <li>Інші ліки, у складі яких уже є парацетамол або ібупрофен.</li>
+    <li>Вага, яку ви ввели по пам'яті. Зважте дитину — доза рахується саме від ваги.</li>
+  </ul>
+
+  <footer>
+    Це довідковий інструмент для батьків, а не медична консультація і не заміна лікарю.
+    Остаточне рішення про ліки для вашої дитини ухвалює лікар. Версія 0.2.0.
+  </footer>
+</section>
+
+</div>
+
+<script>
+"use strict";
+
+const DRUGS = {
+  paracetamol: {
+    label: "Парацетамол",
+    perKg: { min: 10, max: 15, typical: 15 },
+    maxSingleMg: 1000,
+    dailyPerKg: 60,
+    maxDailyMg: 4000,
+    interval: "кожні 4–6 годин",
+    intervalHours: 6,
+    maxDoses: 4,
+    minWeight: 4,
+    minAgeMonths: 3,
+    forms: {
+      syrup: [
+        { mg: 120, ml: 5, group: "ua", label: "120 мг / 5 мл — Панадол Бебі, Парацетамол Бебі, Дофалган" },
+        { mg: 150, ml: 5, group: "ua", label: "150 мг / 5 мл — Ефералган сироп 3%" },
+        { mg: 250, ml: 5, group: "ua", label: "250 мг / 5 мл — Парацетамол сироп для дітей від 6 років" },
+        { mg: 120, ml: 5, group: "pl", label: "120 мг / 5 мл — Panadol dla dzieci, Paracetamol Aflofarm" },
+        { mg: 100, ml: 1, group: "pl", label: "100 мг / 1 мл — Pedicetamol krople (обережно, це краплі)" },
+        { mg: 120, ml: 5, group: "eu", label: "120 мг / 5 мл — Calpol Infant (UK), Doliprane 2,4% (FR)" },
+        { mg: 250, ml: 5, group: "eu", label: "250 мг / 5 мл — Calpol Six Plus (UK), від 6 років" },
+        { mg: 200, ml: 5, group: "eu", label: "200 мг / 5 мл — ben-u-ron Saft, Mexalen (DE, AT)" }
+      ],
+      supp: [
+        { mg: 80, group: "ua", label: "80 мг — Ефералган, Парацетамол Монфарм" },
+        { mg: 100, group: "ua", label: "100 мг — Парацетамол супозиторії" },
+        { mg: 150, group: "ua", label: "150 мг — Ефералган" },
+        { mg: 300, group: "ua", label: "300 мг — Ефералган" },
+        { mg: 80, group: "pl", label: "80 мг — Efferalgan czopki" },
+        { mg: 150, group: "pl", label: "150 мг — Efferalgan czopki" },
+        { mg: 250, group: "pl", label: "250 мг — Paracetamol czopki" },
+        { mg: 75, group: "eu", label: "75 мг — ben-u-ron, від 3 кг" },
+        { mg: 125, group: "eu", label: "125 мг — ben-u-ron" },
+        { mg: 250, group: "eu", label: "250 мг — ben-u-ron, 2–8 років" },
+        { mg: 500, group: "eu", label: "500 мг — від 12 років" }
+      ],
+      tab: [
+        { mg: 200, group: "ua", label: "200 мг — Парацетамол дитячий" },
+        { mg: 325, group: "ua", label: "325 мг" },
+        { mg: 500, group: "ua", label: "500 мг — доросла таблетка" },
+        { mg: 250, group: "eu", label: "250 мг — ben-u-ron direkt, саше 4–11 років" },
+        { mg: 500, group: "eu", label: "500 мг — саше, від 11 років" }
+      ]
+    }
+  },
+  ibuprofen: {
+    label: "Ібупрофен",
+    perKg: { min: 5, max: 10, typical: 10 },
+    maxSingleMg: 400,
+    dailyPerKg: 30,
+    maxDailyMg: 1200,
+    interval: "кожні 6–8 годин",
+    intervalHours: 8,
+    maxDoses: 3,
+    minWeight: 5,
+    minAgeMonths: 3,
+    forms: {
+      syrup: [
+        { mg: 100, ml: 5, group: "ua", label: "100 мг / 5 мл — Нурофєн для дітей, Ібупрофен Бебі" },
+        { mg: 200, ml: 5, group: "ua", label: "200 мг / 5 мл — Нурофєн для дітей форте" },
+        { mg: 100, ml: 5, group: "pl", label: "100 мг / 5 мл — Nurofen dla dzieci, Ibufen D" },
+        { mg: 200, ml: 5, group: "pl", label: "200 мг / 5 мл — Nurofen Forte, Ibufen Forte, Ibum Forte" },
+        { mg: 100, ml: 5, group: "eu", label: "100 мг / 5 мл — Calprofen (UK), Nurofen Junior 2% (DE)" },
+        { mg: 200, ml: 5, group: "eu", label: "200 мг / 5 мл — Nureflex, Nurofen Junior 4%" },
+        { mg: 40, ml: 1, group: "eu", label: "40 мг / 1 мл — краплі, Advil enfant (FR)" }
+      ],
+      supp: [
+        { mg: 60, group: "ua", label: "60 мг — Нурофєн для дітей, від 6 кг" },
+        { mg: 60, group: "pl", label: "60 мг — Nurofen dla dzieci czopki" },
+        { mg: 125, group: "pl", label: "125 мг — Nurofen dla dzieci czopki, від 12,5 кг" },
+        { mg: 125, group: "eu", label: "125 мг — Nurofen Junior Zäpfchen" }
+      ],
+      tab: [
+        { mg: 100, group: "ua", label: "100 мг — жувальні або в оболонці" },
+        { mg: 200, group: "ua", label: "200 мг — Нурофєн, від 20 кг" },
+        { mg: 400, group: "ua", label: "400 мг — Нурофєн форте, від 12 років" }
+      ]
+    }
+  }
+};
+
+const GROUPS = [
+  ["ua", "Україна"],
+  ["pl", "Польща"],
+  ["eu", "Німеччина, Австрія, Велика Британія, Франція"]
+];
+
+const FORM_LABEL = { syrup: "Сироп або суспензія", supp: "Свічки", tab: "Таблетки" };
+
+const state = { drug: "paracetamol", form: "syrup" };
+
+const $ = (id) => document.getElementById(id);
+const nf = (n, d = 2) => {
+  const s = Number(n).toFixed(d).replace(/\.?0+$/, "");
+  return s.replace(".", ",");
+};
+
+/* ---------- вкладки ---------- */
+document.querySelectorAll('[role="tab"]').forEach((tab) => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll('[role="tab"]').forEach((t) => {
+      const on = t === tab;
+      t.setAttribute("aria-selected", String(on));
+      $(t.getAttribute("aria-controls")).hidden = !on;
+    });
+  });
+});
+
+/* ---------- вибір препарату і форми ---------- */
+function selectDrug(id) {
+  state.drug = id;
+  $("btn-paracetamol").setAttribute("aria-pressed", String(id === "paracetamol"));
+  $("btn-ibuprofen").setAttribute("aria-pressed", String(id === "ibuprofen"));
+  buildPresets();
+  calculate();
+}
+$("btn-paracetamol").addEventListener("click", () => selectDrug("paracetamol"));
+$("btn-ibuprofen").addEventListener("click", () => selectDrug("ibuprofen"));
+
+$("formChips").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-form]");
+  if (!btn) return;
+  state.form = btn.dataset.form;
+  $("formChips").querySelectorAll("button").forEach((b) =>
+    b.setAttribute("aria-pressed", String(b === btn))
+  );
+  buildPresets();
+  calculate();
+});
+
+function buildPresets() {
+  const drug = DRUGS[state.drug];
+  const list = drug.forms[state.form];
+  const sel = $("preset");
+  sel.innerHTML = "";
+  GROUPS.forEach(([key, title]) => {
+    const items = list.map((item, i) => [item, i]).filter(([item]) => item.group === key);
+    if (!items.length) return;
+    const grp = document.createElement("optgroup");
+    grp.label = title;
+    items.forEach(([item, i]) => {
+      const opt = document.createElement("option");
+      opt.value = i;
+      opt.textContent = item.label;
+      grp.appendChild(opt);
+    });
+    sel.appendChild(grp);
+  });
+  const other = document.createElement("option");
+  other.value = "custom";
+  other.textContent = "Мого препарату тут немає — ввести вручну";
+  sel.appendChild(other);
+
+  $("concLegend").textContent = FORM_LABEL[state.form] + " — дозування на упаковці";
+  $("concVolWrap").style.display = state.form === "syrup" ? "" : "none";
+  $("concMgLabel").textContent =
+    state.form === "syrup" ? "мг" : state.form === "supp" ? "мг в одній свічці" : "мг в одній таблетці";
+  applyPreset();
+}
+
+function applyPreset() {
+  const drug = DRUGS[state.drug];
+  const list = drug.forms[state.form];
+  const v = $("preset").value;
+  $("customRow").style.display = v === "custom" ? "" : "none";
+  if (v !== "custom") {
+    const item = list[Number(v)];
+    $("concMg").value = item.mg;
+    if (state.form === "syrup") $("concMl").value = item.ml;
+  }
+}
+$("preset").addEventListener("change", () => { applyPreset(); calculate(); });
+
+/* ---------- вік ---------- */
+function ageInMonths() {
+  const v = parseFloat($("age").value);
+  if (!isFinite(v) || v < 0) return null;
+  return $("ageUnit").value === "years" ? v * 12 : v;
+}
+
+/* ---------- розрахунок ---------- */
+function calculate() {
+  const drug = DRUGS[state.drug];
+  const weight = parseFloat($("weight").value);
+  const res = $("result");
+  const warnBox = $("warnings");
+  warnBox.innerHTML = "";
+
+  if (!isFinite(weight) || weight <= 0) {
+    res.className = "result empty";
+    res.textContent = "Введіть вагу — покажу разову дозу.";
+    return;
+  }
+  if (weight < 2 || weight > 120) {
+    res.className = "result empty";
+    res.textContent = "Перевірте вагу: калькулятор працює в межах 2–120 кг.";
+    return;
+  }
+
+  const concMg = parseFloat($("concMg").value);
+  const concMl = state.form === "syrup" ? parseFloat($("concMl").value) : null;
+  if (!isFinite(concMg) || concMg <= 0 || (state.form === "syrup" && (!isFinite(concMl) || concMl <= 0))) {
+    res.className = "result empty";
+    res.textContent = "Вкажіть дозування з упаковки.";
+    return;
+  }
+
+  const minMg = drug.perKg.min * weight;
+  const maxMg = Math.min(drug.perKg.max * weight, drug.maxSingleMg);
+  const targetMg = Math.min(drug.perKg.typical * weight, drug.maxSingleMg);
+  const dailyLimit = Math.min(drug.dailyPerKg * weight, drug.maxDailyMg);
+
+  let amount, unit, actualMg, note = null;
+
+  if (state.form === "syrup") {
+    const mgPerMl = concMg / concMl;
+    const step = targetMg / mgPerMl >= 5 ? 0.5 : 0.25;
+    let ml = Math.round(targetMg / mgPerMl / step) * step;
+    while (ml * mgPerMl > maxMg && ml > step) ml -= step;
+    if (ml < step) ml = step;
+    amount = nf(ml, 2);
+    unit = "мл";
+    actualMg = ml * mgPerMl;
+    if (ml > 20) note = { level: "warn", text: "Об'єм понад 20 мл — перевірте, чи правильно вказана концентрація на упаковці." };
+  } else if (state.form === "supp") {
+    let n = Math.max(1, Math.round(targetMg / concMg));
+    while (n * concMg > maxMg && n > 1) n--;
+    amount = String(n);
+    unit = n === 1 ? "свічка" : n < 5 ? "свічки" : "свічок";
+    actualMg = n * concMg;
+    if (actualMg > maxMg) {
+      note = { level: "danger", text: "Свічка " + concMg + " мг завелика для ваги " + nf(weight, 1) + " кг. Візьміть меншу — свічки не можна різати, діюча речовина в них розподілена нерівномірно." };
+    } else if (actualMg < minMg) {
+      note = { level: "warn", text: "Ця свічка дає менше за мінімальну ефективну дозу. Ефект може бути слабким — підберіть свічку більшого номіналу." };
+    }
+  } else {
+    const step = 0.5;
+    let n = Math.max(step, Math.round(targetMg / concMg / step) * step);
+    while (n * concMg > maxMg && n > step) n -= step;
+    amount = nf(n, 1);
+    unit = n === 1 ? "таблетка" : "таб.";
+    actualMg = n * concMg;
+    if (actualMg > maxMg) {
+      note = { level: "danger", text: "Навіть половина таблетки " + concMg + " мг перевищує дозу для цієї ваги. Потрібна рідка форма або свічки." };
+    }
+  }
+
+  const dosesPerDay = Math.max(1, Math.min(drug.maxDoses, Math.floor(dailyLimit / actualMg)));
+
+  const pct = (v) => Math.max(0, Math.min(100, ((v - drug.perKg.min * weight * 0.6) / (drug.perKg.max * weight * 1.4 - drug.perKg.min * weight * 0.6)) * 100));
+
+  res.className = "result";
+  res.innerHTML =
+    '<div class="dose">' + amount + ' <small>' + unit + '</small></div>' +
+    '<p class="dose-mg">' + nf(actualMg, 0) + ' мг на один прийом · ' + nf(actualMg / weight, 1) + ' мг/кг</p>' +
+    '<div class="ladder" aria-hidden="true">' +
+      '<div class="ladder-bar">' +
+        '<div class="ladder-safe" style="left:' + pct(minMg) + '%;right:' + (100 - pct(maxMg)) + '%"></div>' +
+        '<div class="ladder-mark" style="left:calc(' + pct(actualMg) + '% - 2px)"></div>' +
+      '</div>' +
+      '<div class="ladder-scale"><span>' + nf(minMg, 0) + ' мг</span><span>безпечний діапазон</span><span>' + nf(maxMg, 0) + ' мг</span></div>' +
+    '</div>' +
+    '<dl class="facts">' +
+      '<div><dt>Не частіше ніж</dt><dd>' + drug.interval + '</dd></div>' +
+      '<div><dt>Прийомів за добу</dt><dd>до ' + dosesPerDay + '</dd></div>' +
+      '<div><dt>Максимум за 24 години</dt><dd>' + nf(dailyLimit, 0) + ' мг</dd></div>' +
+      '<div><dt>Препарат і форма</dt><dd>' + drug.label + ', ' + FORM_LABEL[state.form].toLowerCase() + '</dd></div>' +
+    '</dl>';
+
+  const warnings = buildWarnings(weight, note);
+  warnings.forEach((w) => {
+    const el = document.createElement("div");
+    el.className = "note " + w.level;
+    el.innerHTML = w.text;
+    warnBox.appendChild(el);
+  });
+}
+
+function buildWarnings(weight, formNote) {
+  const drug = DRUGS[state.drug];
+  const months = ageInMonths();
+  const out = [];
+
+  if (months !== null && months < 3) {
+    out.push({ level: "danger", text: "<strong>Дитині менше 3 місяців.</strong> Жарознижувальне в цьому віці дають лише за призначенням лікаря, а сама гарячка — привід звернутися по допомогу сьогодні, а не чекати." });
+  } else if (state.drug === "ibuprofen" && months !== null && months < 6) {
+    out.push({ level: "warn", text: "До 6 місяців ібупрофен дають після консультації з лікарем. Парацетамол у цьому віці — звичніший вибір." });
+  }
+
+  if (weight < drug.minWeight) {
+    out.push({ level: "danger", text: "Вага менша за " + drug.minWeight + " кг — дозу має призначати лікар." });
+  }
+
+  if (state.form === "tab" && months !== null && months < 72) {
+    out.push({ level: "warn", text: "Таблетки дітям до 6 років зазвичай не дають: ризик вдавитися, а половинка ділиться неточно. Рідка форма або свічки надійніші." });
+  }
+
+  if (formNote) out.push(formNote);
+
+  if (state.form === "syrup") {
+    const mgPerMl = parseFloat($("concMg").value) / parseFloat($("concMl").value);
+    if (mgPerMl >= 80) {
+      out.push({ level: "warn", text: "<strong>" + nf(mgPerMl, 0) + " мг в одному мілілітрі — це краплі, а не сироп.</strong> Концентрація вчетверо вища за звичайну суспензію. Ще раз звірте цифру на флаконі." });
+    } else if (mgPerMl >= 40) {
+      out.push({ level: "warn", text: "Це посилена форма («форте»). Вона вдвічі концентрованіша за звичайну — переконайтеся, що у вас у руках саме той флакон." });
+    }
+  }
+
+  if (state.drug === "ibuprofen") {
+    out.push({ level: "info", text: "Ібупрофен не дають при зневодненні, багаторазовому блюванні чи проносі, вітряній віспі, хворобах нирок і при астмі з непереносимістю НПЗЗ. Давати після їжі." });
+  }
+
+  if (weight > 40) {
+    out.push({ level: "info", text: "За такої ваги діють дорослі стелі: разова доза не більша за " + drug.maxSingleMg + " мг, добова — за " + drug.maxDailyMg + " мг." });
+  }
+
+  out.push({ level: "info", text: "Перевірте, чи немає парацетамолу або ібупрофену в інших ліках, які дитина вже приймає — комбіновані порошки від застуди часто їх містять. Два жарознижувальні одночасно не дають." });
+
+  return out;
+}
+
+["weight", "age", "concMg", "concMl"].forEach((id) => $(id).addEventListener("input", calculate));
+$("ageUnit").addEventListener("change", calculate);
+
+$("reset").addEventListener("click", () => {
+  ["weight", "age", "concMg"].forEach((id) => ($(id).value = ""));
+  $("ageUnit").value = "years";
+  selectDrug("paracetamol");
+  $("result").className = "result empty";
+  $("result").textContent = "Введіть вагу — покажу разову дозу.";
+  $("warnings").innerHTML = "";
+  $("weight").focus();
+});
+
+/* ---------- наступний прийом ---------- */
+function nextDose() {
+  const box = $("altResult");
+  const rows = [];
+  const now = new Date();
+
+  [["paracetamol", "lastP", "cntP"], ["ibuprofen", "lastI", "cntI"]].forEach(([id, timeId, cntId]) => {
+    const t = $(timeId).value;
+    if (!t) return;
+    const drug = DRUGS[id];
+    const [h, m] = t.split(":").map(Number);
+    const last = new Date(now);
+    last.setHours(h, m, 0, 0);
+    if (last > now) last.setDate(last.getDate() - 1);
+    const next = new Date(last.getTime() + drug.intervalHours * 3600000);
+    const taken = Math.max(0, parseInt($(cntId).value, 10) || 0);
+    const left = drug.maxDoses - taken;
+    const hh = String(next.getHours()).padStart(2, "0") + ":" + String(next.getMinutes()).padStart(2, "0");
+    const ready = next <= now;
+    rows.push(
+      '<div><dt>' + drug.label + '</dt><dd>' +
+      (left <= 0 ? "ліміт доби вичерпано" : ready ? "можна вже (з " + hh + ")" : "не раніше " + hh) +
+      '</dd></div>' +
+      '<div><dt>Залишилось доз до кінця доби</dt><dd>' + Math.max(0, left) + " з " + drug.maxDoses + '</dd></div>'
+    );
+  });
+
+  if (!rows.length) {
+    box.className = "result empty";
+    box.textContent = "Вкажіть час останньої дози — порахую, коли можна наступну.";
+    return;
+  }
+  box.className = "result";
+  box.innerHTML = '<dl class="facts">' + rows.join("") + "</dl>";
+}
+["lastP", "lastI", "cntP", "cntI"].forEach((id) => $(id).addEventListener("input", nextDose));
+
+/* ---------- старт ---------- */
+buildPresets();
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+</script>
+</body>
+</html>
