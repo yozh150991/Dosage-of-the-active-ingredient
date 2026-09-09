@@ -285,3 +285,16 @@ test("замалий номінал свічки при великій вазі 
   assert.equal(d.amount, 2);
   assert.ok(d.flags.includes("supp_below_min"));
 });
+
+/* ─────────────── зібраний файл ─────────────── */
+
+test("index.html самодостатній: ядро вбудоване, зовнішніх скриптів немає", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+  const core = fs.readFileSync(path.join(__dirname, "..", "calc-core.js"), "utf8").trimEnd();
+
+  assert.ok(html.includes(core), "index.html відстав від calc-core.js — запустіть npm run build");
+  assert.ok(!/<script[^>]+src=/.test(html), "у зібраному файлі не має бути зовнішніх скриптів");
+  assert.ok(!html.includes("<!--CORE-->"), "маркер збірки залишився в результаті");
+});
