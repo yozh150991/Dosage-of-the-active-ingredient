@@ -250,12 +250,12 @@ th{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--colo
     <section class="card">
       <div class="lblrow"><span class="lbl" id="l-weight"></span><span id="l-required"></span></div>
       <div class="weightbox" id="weightbox">
-        <input type="number" id="weight" inputmode="decimal" step="0.1" min="0" autocomplete="off">
+        <input type="text" id="weight" inputmode="decimal" enterkeyhint="done" autocomplete="off" aria-describedby="l-agenote">
         <div class="unitside"><b id="l-kg"></b><div class="badge" id="w-ok" hidden>✓</div></div>
       </div>
       <div class="agerow">
         <div class="agefield" id="agefield">
-          <input type="number" id="age" inputmode="numeric" step="1" min="0" autocomplete="off">
+          <input type="text" id="age" inputmode="numeric" enterkeyhint="done" autocomplete="off">
           <div class="badge" id="a-ok" hidden>✓</div>
         </div>
         <select id="ageUnit"><option value="years"></option><option value="months"></option></select>
@@ -774,6 +774,41 @@ function buildWarnings(input, dose) {
   return out;
 }
 
+/* Очищення того, що батько набирає в полі.
+   Живе тут, а не в розмітці, щоб бути під тестами.
+
+   Правило: на першому недопустимому символі рядок ОБРІЗАЄТЬСЯ, а не
+   склеюється. Інакше "12.5.7" перетворилося б на "12.57", а "1e5" на "15" —
+   тобто поле показало б число, якого людина не вводила. Для калькулятора
+   дози це неприйнятно.
+
+   Не проходять: мінус, "e", літери, другий роздільник, провідні нулі
+   ("05" → "5") і будь-яке значення, що починається з нуля ("0", "0,5" → "").
+   Кома і крапка рівноправні на вводі, назовні завжди крапка. */
+function sanitizeNumber(raw, opts) {
+  const o = opts || {};
+  const decimal = o.decimal !== false;
+  const maxLen = o.maxLength || 6;
+
+  const src = String(raw == null ? "" : raw).replace(/\s/g, "").replace(/,/g, ".");
+  let out = "";
+  let dotUsed = false;
+
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i];
+    if (ch >= "0" && ch <= "9") { out += ch; continue; }
+    if (ch === "." && decimal && !dotUsed && out.length) { out += ch; dotUsed = true; continue; }
+    break;                                  // усе інше — кінець числа
+  }
+
+  if (/^0/.test(out)) {
+    out = out.replace(/^0+/, "");           // "05" → "5"
+    if (out === "" || out[0] === ".") return "";   // "0", "0.5", "00" — не число ваги
+  }
+  if (out.length > maxLen) out = out.slice(0, maxLen);
+  return out;
+}
+
 /* Мінімальний проміжок між РІЗНИМИ препаратами при чергуванні, годин */
 const CROSS_INTERVAL_HOURS = 3;
 
@@ -829,6 +864,7 @@ return {
   CROSS_INTERVAL_HOURS: CROSS_INTERVAL_HOURS,
   MAX_SUPPOSITORIES: MAX_SUPPOSITORIES,
   MAX_UNITS: MAX_UNITS,
+  sanitizeNumber: sanitizeNumber,
   computeDose: computeDose,
   buildWarnings: buildWarnings,
   nextDoseTime: nextDoseTime
@@ -1186,7 +1222,7 @@ return { UI: UI, NOTES: NOTES, noteText: noteText };
 </script>
 <script>
 "use strict";
-const { DRUGS, GROUPS, FORM_LABEL, FORBIDDEN, COMBINED, LIMITS,
+const { DRUGS, GROUPS, FORM_LABEL, FORBIDDEN, COMBINED, LIMITS, sanitizeNumber,
         computeDose, buildWarnings, checkGates, isBlocked, nextDoseTime } = window.Doza;
 const { UI, noteText } = window.DozaI18n;
 
@@ -1235,7 +1271,40 @@ function hhmm(ts) {
 }
 function plural(list, n) { return n === 1 ? list[0] : list[1]; }
 
-/* ── ввід ── */
+/* ── ввід ──
+   Поля текстові, а не type="number": лише так можна прибрати мінус, "e"
+   і провідні нулі ще під час набору. Числову клавіатуру дає inputmode. */
+const WEIGHT_OPTS = { decimal: true, maxLength: 5 };
+const AGE_OPTS = { decimal: false, maxLength: 3 };
+
+/* Показуємо з комою в українській, зберігаємо завжди з крапкою */
+const forDisplay = (v) => (state.lang === "uk" ? String(v).replace(".", ",") : String(v));
+
+function bindNumeric(id, opts, apply) {
+  const node = $(id);
+  node.addEventListener("input", () => {
+    const before = node.value;
+    const caret = node.selectionStart;
+    const clean = sanitizeNumber(before, opts);
+    const shown = forDisplay(clean);
+    if (shown !== before) {
+      node.value = shown;
+      const pos = Math.max(0, caret - (before.length - shown.length));
+      try { node.setSelectionRange(pos, pos); } catch (e) { /* деякі браузери не дають */ }
+    }
+    apply(clean);
+    save();
+    render();
+  });
+  node.addEventListener("blur", () => {
+    const clean = sanitizeNumber(node.value, opts).replace(/\.$/, "");
+    node.value = forDisplay(clean);
+    apply(clean);
+    save();
+    render();
+  });
+}
+
 const weightNum = () => { const v = parseFloat(String(state.weight).replace(",", ".")); return isFinite(v) ? v : NaN; };
 function ageMonths() {
   const v = parseFloat(String(state.age).replace(",", "."));
@@ -1503,8 +1572,8 @@ function switchTab(tab) {
 }
 
 /* ── події ── */
-$("weight").addEventListener("input", (e) => { state.weight = e.target.value; save(); render(); });
-$("age").addEventListener("input", (e) => { state.age = e.target.value; save(); render(); });
+bindNumeric("weight", WEIGHT_OPTS, (v) => { state.weight = v; });
+bindNumeric("age", AGE_OPTS, (v) => { state.age = v; });
 $("ageUnit").addEventListener("change", (e) => { state.ageUnit = e.target.value; save(); render(); });
 $("preset").addEventListener("change", (e) => { state.presetIndex = Number(e.target.value); save(); render(); });
 
@@ -1535,7 +1604,10 @@ $("undo").addEventListener("click", () => { state.doses.shift(); save(); renderN
   $(id).addEventListener("click", () => switchTab(k)));
 
 ["uk", "en"].forEach((lang) => $("lang-" + lang).addEventListener("click", () => {
-  state.lang = lang; save(); paintChrome(); paintChips(); paintPresets(); render();
+  state.lang = lang; save();
+  $("weight").value = forDisplay(state.weight);
+  $("age").value = forDisplay(state.age);
+  paintChrome(); paintChips(); paintPresets(); render();
   if (state.tab === "next") renderNext();
 }));
 $("theme").addEventListener("click", () => {
@@ -1553,8 +1625,10 @@ function applyTheme() {
 /* ── старт ── */
 load();
 if (!DRUGS[state.drug]) state.drug = "paracetamol";
-$("weight").value = state.weight;
-$("age").value = state.age;
+state.weight = sanitizeNumber(state.weight, WEIGHT_OPTS);
+state.age = sanitizeNumber(state.age, AGE_OPTS);
+$("weight").value = forDisplay(state.weight);
+$("age").value = forDisplay(state.age);
 $("ageUnit").value = state.ageUnit;
 $("d-paracetamol").setAttribute("aria-pressed", String(state.drug === "paracetamol"));
 $("d-ibuprofen").setAttribute("aria-pressed", String(state.drug === "ibuprofen"));

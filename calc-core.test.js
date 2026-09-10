@@ -8,6 +8,7 @@ const {
   FORM_LABEL,
   LIMITS,
   FORBIDDEN,
+  sanitizeNumber,
   COMBINED,
   MAX_UNITS,
   computeDose,
@@ -620,4 +621,65 @@ test("кирилицю покриває шрифт, у якому вона є", 
   assert.ok(range, "у кириличного @font-face немає unicode-range");
   assert.match(range[1], /U\+0400-045F/, "діапазон має покривати основну кирилицю");
   assert.ok(range[1].includes("U+0490-0491"), "українські Ґ і ґ мають бути в діапазоні");
+});
+
+/* ─────────────── очищення вводу ─────────────── */
+
+const W = { decimal: true, maxLength: 5 };
+const A = { decimal: false, maxLength: 3 };
+
+test("від'ємні значення не проходять", () => {
+  assert.equal(sanitizeNumber("-5", W), "");
+  assert.equal(sanitizeNumber("-12.5", W), "");
+  assert.equal(sanitizeNumber("7-", W), "7", "мінус у кінці просто обрізає рядок");
+  assert.equal(sanitizeNumber("-2", A), "");
+});
+
+test("значення, що починається з нуля, не приймається", () => {
+  assert.equal(sanitizeNumber("0", W), "");
+  assert.equal(sanitizeNumber("00", W), "");
+  assert.equal(sanitizeNumber("0.5", W), "");
+  assert.equal(sanitizeNumber("0,5", W), "");
+  assert.equal(sanitizeNumber(".5", W), "", "без цілої частини теж ні");
+  assert.equal(sanitizeNumber("05", W), "5", "провідний нуль просто прибирається");
+  assert.equal(sanitizeNumber("007", W), "7");
+});
+
+test("на першому недопустимому символі рядок обрізається, а не склеюється", () => {
+  assert.equal(sanitizeNumber("12.5.7", W), "12.5", "інакше вийшло б 12.57 — число, якого не вводили");
+  assert.equal(sanitizeNumber("1e5", W), "1", "інакше вийшло б 15");
+  assert.equal(sanitizeNumber("1E5", W), "1");
+  assert.equal(sanitizeNumber("12abc", W), "12");
+  assert.equal(sanitizeNumber("12,5", A), "12", "у полі віку роздільник обриває рядок");
+});
+
+test("кома і крапка рівноправні, назовні завжди крапка", () => {
+  assert.equal(sanitizeNumber("12,5", W), "12.5");
+  assert.equal(sanitizeNumber("12.5", W), "12.5");
+  assert.equal(sanitizeNumber("12.", W), "12.", "проміжний стан набору не ламається");
+});
+
+test("пробіли й нецифрові символи не створюють чисел з нізвідки", () => {
+  assert.equal(sanitizeNumber("  8 ", W), "8");
+  assert.equal(sanitizeNumber("١٢", W), "", "арабо-індійські цифри не приймаємо");
+  assert.equal(sanitizeNumber("", W), "");
+  assert.equal(sanitizeNumber(null, W), "");
+  assert.equal(sanitizeNumber(undefined, W), "");
+});
+
+test("довжина обмежена, щоб поле не переповнювалось", () => {
+  assert.equal(sanitizeNumber("1234567", W), "12345");
+  assert.equal(sanitizeNumber("9999", A), "999");
+});
+
+test("очищений ввід завжди або порожній, або коректне додатне число", () => {
+  const inputs = ["-5", "0", "0.5", "05", "12,5", "1e5", "abc", "  ", "12.5.7", "999999", ".", ",", "-", "+3"];
+  for (const raw of inputs) {
+    const v = sanitizeNumber(raw, W);
+    if (v === "" || v.endsWith(".")) continue;
+    const n = Number(v);
+    assert.ok(isFinite(n), raw + " → " + v + " не число");
+    assert.ok(n > 0, raw + " → " + v + " не додатне");
+    assert.ok(!/^0/.test(v), raw + " → " + v + " починається з нуля");
+  }
 });

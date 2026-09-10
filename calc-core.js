@@ -432,6 +432,41 @@ function buildWarnings(input, dose) {
   return out;
 }
 
+/* Очищення того, що батько набирає в полі.
+   Живе тут, а не в розмітці, щоб бути під тестами.
+
+   Правило: на першому недопустимому символі рядок ОБРІЗАЄТЬСЯ, а не
+   склеюється. Інакше "12.5.7" перетворилося б на "12.57", а "1e5" на "15" —
+   тобто поле показало б число, якого людина не вводила. Для калькулятора
+   дози це неприйнятно.
+
+   Не проходять: мінус, "e", літери, другий роздільник, провідні нулі
+   ("05" → "5") і будь-яке значення, що починається з нуля ("0", "0,5" → "").
+   Кома і крапка рівноправні на вводі, назовні завжди крапка. */
+function sanitizeNumber(raw, opts) {
+  const o = opts || {};
+  const decimal = o.decimal !== false;
+  const maxLen = o.maxLength || 6;
+
+  const src = String(raw == null ? "" : raw).replace(/\s/g, "").replace(/,/g, ".");
+  let out = "";
+  let dotUsed = false;
+
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i];
+    if (ch >= "0" && ch <= "9") { out += ch; continue; }
+    if (ch === "." && decimal && !dotUsed && out.length) { out += ch; dotUsed = true; continue; }
+    break;                                  // усе інше — кінець числа
+  }
+
+  if (/^0/.test(out)) {
+    out = out.replace(/^0+/, "");           // "05" → "5"
+    if (out === "" || out[0] === ".") return "";   // "0", "0.5", "00" — не число ваги
+  }
+  if (out.length > maxLen) out = out.slice(0, maxLen);
+  return out;
+}
+
 /* Мінімальний проміжок між РІЗНИМИ препаратами при чергуванні, годин */
 const CROSS_INTERVAL_HOURS = 3;
 
@@ -487,6 +522,7 @@ return {
   CROSS_INTERVAL_HOURS: CROSS_INTERVAL_HOURS,
   MAX_SUPPOSITORIES: MAX_SUPPOSITORIES,
   MAX_UNITS: MAX_UNITS,
+  sanitizeNumber: sanitizeNumber,
   computeDose: computeDose,
   buildWarnings: buildWarnings,
   nextDoseTime: nextDoseTime
