@@ -1,332 +1,341 @@
 <!-- Згенеровано npm run build. Не редагуйте цей файл руками:
-     розмітка живе в src/index.html, розрахунок — у calc-core.js. -->
+     розмітка живе в src/index.html, розрахунок — у calc-core.js, тексти — в i18n.js. -->
 <!DOCTYPE html>
 <html lang="uk">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Доза для дитини — калькулятор жарознижувального</title>
-<meta name="description" content="Розрахунок разової дози парацетамолу та ібупрофену за вагою дитини. Працює офлайн, нічого не зберігає.">
-<meta name="theme-color" content="#0E5A63">
+<title>доза.дитині — калькулятор жарознижувального</title>
+<meta name="description" content="Разова доза парацетамолу та ібупрофену за вагою дитини. Працює офлайн, дані лишаються у браузері.">
+<meta name="theme-color" content="#f3f2f2">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preload" href="fonts/archivo-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/manrope-cyrillic-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <style>
-:root{
-  --paper:#F7F9FA;
-  --card:#FFFFFF;
-  --ink:#16262C;
-  --ink-soft:#5A6B72;
-  --line:#D8E1E4;
-  --petrol:#0E5A63;
-  --petrol-soft:#E3F0F1;
-  --amber:#8A5A08;
-  --amber-soft:#FBF0DC;
-  --indigo:#33478F;
-  --indigo-soft:#E6EAF7;
-  --danger:#9E1B2F;
-  --danger-soft:#FBE7E9;
-  --warn-soft:#FDF3DE;
-  --warn-line:#E0B563;
-  --radius:14px;
+/* Шрифти лежать у репозиторії — жодного зовнішнього запиту, працює офлайн.
+   Archivo (макет) не має кирилиці взагалі: у ньому лише latin, latin-ext
+   і vietnamese. Тому кирилицю закриває Manrope — теж варіативний гротеск
+   із вагою до 800. Розділені через unicode-range, браузер вантажить
+   лише ту підмножину, яка справді потрібна поточній мові.
+   Обидва під ліцензією SIL OFL 1.1, тексти ліцензій — у fonts/. */
+@font-face{
+  font-family:AppSans;font-style:normal;font-weight:100 900;font-display:swap;
+  src:url(fonts/archivo-latin-wght-normal.woff2) format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
-@media (prefers-color-scheme: dark){
-  :root{
-    --paper:#101A1E;
-    --card:#17252A;
-    --ink:#EAF1F2;
-    --ink-soft:#9CB0B6;
-    --line:#2A3D44;
-    --petrol:#6FD3DA;
-    --petrol-soft:#123840;
-    --amber:#EBB765;
-    --amber-soft:#33280F;
-    --indigo:#A9B8F0;
-    --indigo-soft:#1C2340;
-    --danger:#FF9AA6;
-    --danger-soft:#3A1A20;
-    --warn-soft:#332810;
-    --warn-line:#7A5C22;
-  }
+@font-face{
+  font-family:AppSans;font-style:normal;font-weight:100 900;font-display:swap;
+  src:url(fonts/archivo-latin-ext-wght-normal.woff2) format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face{
+  font-family:AppSans;font-style:normal;font-weight:100 900;font-display:swap;
+  src:url(fonts/manrope-cyrillic-wght-normal.woff2) format('woff2');
+  unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+@font-face{
+  font-family:AppSans;font-style:normal;font-weight:100 900;font-display:swap;
+  src:url(fonts/manrope-cyrillic-ext-wght-normal.woff2) format('woff2');
+  unicode-range:U+0460-052F,U+1C80-1C8A,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+:root{
+  --color-bg:#f3f2f2; --color-surface:#eae9e9; --color-text:#201e1d;
+  --color-accent:#ec3013; --color-accent-300:#ffc4b8; --color-accent-700:#ae1800;
+  --color-divider:rgba(32,30,29,.40);
+  --color-neutral-600:#7d7979; --color-neutral-700:#605d5d; --color-neutral-800:#444141;
+  --ok:#1f7a4d;
+  --shadow-sm:0 1px 2px rgba(45,43,43,.14);
+  --shadow-md:0 3px 10px rgba(45,43,43,.16);
+  --shadow-lg:0 12px 32px rgba(45,43,43,.22);
+}
+:root[data-theme="dark"]{
+  --color-bg:#181716; --color-surface:#232120; --color-text:#f4f2f1;
+  --color-divider:rgba(244,242,241,.22);
+  --color-neutral-600:#a29d9c; --color-neutral-700:#c3bebd; --color-neutral-800:#ded9d8;
+  --color-accent-300:#7c1405; --color-accent-700:#ff9783;
+  --ok:#3fa06c;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{
-  background:var(--paper);
-  color:var(--ink);
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-  font-size:17px;
-  line-height:1.5;
-  font-variant-numeric:tabular-nums;
-  -webkit-text-size-adjust:100%;
+  background:var(--color-bg);color:var(--color-text);
+  font-family:AppSans,system-ui,sans-serif;font-size:15px;line-height:1.55;
+  transition:background .2s;-webkit-text-size-adjust:100%;
 }
-.wrap{max-width:640px;margin:0 auto;padding:16px 16px 64px}
-header{padding:8px 0 4px}
-h1{font-size:1.32rem;line-height:1.25;margin:0 0 4px;letter-spacing:-0.01em}
-.sub{color:var(--ink-soft);font-size:0.9rem;margin:0}
+h1,h2,h3{font-weight:800;letter-spacing:-.02em;line-height:1.1;margin:0}
+button,input,select{font-family:inherit}
+:focus-visible{outline:2px solid var(--color-accent);outline-offset:2px}
+.app{container-type:inline-size;max-width:1180px;margin:0 auto}
 
-nav{display:flex;gap:6px;margin:16px 0 18px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px}
-nav button{white-space:nowrap;
-  flex:1;appearance:none;border:0;background:transparent;color:var(--ink-soft);
-  font:inherit;font-size:0.92rem;padding:9px 4px;border-radius:9px;cursor:pointer;
+/* ── службова смуга ── */
+.util{
+  position:sticky;top:0;z-index:9;display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+  padding:12px 18px;border-bottom:1px solid var(--color-divider);background:var(--color-bg);
 }
-nav button[aria-selected="true"]{background:var(--petrol);color:#fff;font-weight:600}
-nav button:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--petrol);outline-offset:2px}
-
-.panel[hidden]{display:none}
-fieldset{border:0;padding:0;margin:0 0 18px}
-legend{font-size:0.86rem;color:var(--ink-soft);padding:0;margin-bottom:8px}
-label{display:block;font-size:0.86rem;color:var(--ink-soft);margin-bottom:6px}
-input[type=number],input[type=time],select{
-  width:100%;font:inherit;padding:12px 12px;border:1px solid var(--line);
-  border-radius:11px;background:var(--card);color:var(--ink);
+.wordmark{font-weight:800;font-size:16px;letter-spacing:-.02em;white-space:nowrap;margin-right:auto}
+.wordmark i{color:var(--color-accent);font-style:normal}
+.pillgroup{display:flex;gap:2px;padding:3px;background:var(--color-surface);border-radius:999px}
+.pillgroup button{
+  border:0;border-radius:999px;padding:7px 13px;font-weight:800;font-size:12px;
+  letter-spacing:.03em;background:transparent;color:var(--color-neutral-700);cursor:pointer;transition:all .15s;
 }
-input[type=number]{font-size:1.25rem;font-weight:600}
-.row{display:flex;gap:10px}
-.row>*{flex:1 1 0;min-width:0}
-.age-row>*:first-child{flex:1 1 58%}
-.age-row>*:last-child{flex:1 1 42%}
-input.hero{font-size:1.9rem;font-weight:700;padding:14px 14px;letter-spacing:-0.02em}
-.hint{color:var(--ink-soft);font-size:0.8rem;margin:8px 2px 0;line-height:1.4}
-
-.seg{display:flex;gap:10px}
-.seg button{
-  flex:1;font:inherit;padding:14px 8px;border-radius:12px;cursor:pointer;
-  border:1.5px solid var(--line);background:var(--card);color:var(--ink);
-  display:flex;flex-direction:column;gap:2px;align-items:flex-start;text-align:left;
+.pillgroup button[aria-pressed="true"]{background:var(--color-text);color:var(--color-bg)}
+.toggle{
+  border:1px solid var(--color-divider);border-radius:999px;padding:8px 14px;
+  font-weight:800;font-size:12px;background:transparent;color:var(--color-text);cursor:pointer;transition:all .15s;
 }
-.seg button span{font-size:0.78rem;color:var(--ink-soft)}
-.seg button[aria-pressed="true"]{border-width:2px;font-weight:600}
-#btn-paracetamol[aria-pressed="true"]{border-color:var(--amber);background:var(--amber-soft)}
-#btn-ibuprofen[aria-pressed="true"]{border-color:var(--indigo);background:var(--indigo-soft)}
+.toggle[aria-pressed="true"]{background:var(--color-text);color:var(--color-bg);border-color:var(--color-text)}
 
+/* ── шапка ── */
+.head{padding:26px 18px 16px}
+.kicker{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--color-neutral-600);margin:0 0 10px}
+.head h1{font-size:clamp(28px,4.2cqw,42px);letter-spacing:-.035em;line-height:1.06;max-width:18ch;overflow-wrap:break-word}
+.head p{margin:12px 0 0;max-width:58ch;color:var(--color-neutral-700)}
+
+/* ── вкладки ── */
+.tabswrap{position:sticky;top:53px;z-index:8;padding:8px 18px 14px;background:var(--color-bg)}
+.tabs{display:flex;gap:4px;padding:4px;background:var(--color-surface);border-radius:999px}
+.tabs button{
+  flex:1;border:0;border-radius:999px;padding:12px 10px;font-weight:800;font-size:14px;
+  background:transparent;color:var(--color-neutral-600);cursor:pointer;transition:all .15s;
+}
+.tabs button[aria-selected="true"]{background:var(--color-text);color:var(--color-bg);box-shadow:var(--shadow-md)}
+
+/* ── сітка ── */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;column-gap:22px;align-items:start;padding:0 18px 48px}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.col.left{gap:22px}
+@media (min-width:760px){ .col.right{position:sticky;top:124px} }
+.card{background:var(--color-surface);border-radius:20px;padding:20px}
+.lbl{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--color-text)}
+.lblrow{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:12px}
+.lblrow span{font-size:12px;color:var(--color-neutral-600);font-weight:400;text-transform:none;letter-spacing:0}
+.sect{margin-top:18px}
+
+/* ── ввід ── */
+.weightbox{display:flex;background:var(--color-bg);border:2px solid var(--color-divider);border-radius:18px;transition:all .15s}
+.weightbox.ok{border-color:var(--ok)}
+.weightbox.bad{border-color:var(--color-accent)}
+.weightbox input{
+  flex:1;min-width:0;border:0;background:transparent;color:var(--color-text);
+  font-weight:800;font-size:clamp(34px,6cqw,44px);padding:16px 18px;caret-color:var(--color-accent);
+}
+.weightbox input::-webkit-outer-spin-button,.weightbox input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.weightbox input[type=number]{-moz-appearance:textfield}
+.unitside{display:flex;align-items:center;gap:12px;padding:0 18px}
+.unitside b{font-weight:800;font-size:18px;color:var(--color-neutral-600);align-self:flex-end;padding-bottom:18px}
+.badge{width:22px;height:22px;border-radius:999px;background:var(--ok);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:800;line-height:1;align-self:center}
+.agerow{display:flex;gap:10px;margin-top:14px}
+.agefield{flex:1;display:flex;align-items:center;background:var(--color-bg);border:2px solid var(--color-divider);border-radius:14px;height:48px;padding-right:12px;transition:all .15s}
+.agefield.ok{border-color:var(--ok)}
+.agefield input{flex:1;min-width:0;border:0;background:transparent;color:var(--color-text);font-size:16px;padding:0 16px;height:44px}
+select{
+  height:48px;border-radius:14px;border:1px solid var(--color-divider);
+  background:var(--color-bg);color:var(--color-text);font-size:16px;padding:0 12px;
+}
+.agerow select{width:150px;flex:0 0 auto}
+.note-sm{font-size:12px;color:var(--color-neutral-600);margin:12px 0 0}
+
+.drugs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.drugs button{
+  padding:16px;border-radius:18px;border:2px solid var(--color-divider);background:var(--color-bg);
+  color:var(--color-neutral-700);text-align:left;cursor:pointer;transition:all .15s;
+}
+.drugs button[aria-pressed="true"]{border-color:var(--color-text);background:var(--color-text);color:var(--color-bg);box-shadow:var(--shadow-md)}
+.drugs b{display:block;font-weight:800;font-size:16px}
+.drugs small{font-size:12px;opacity:.75}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chips button{
-  font:inherit;font-size:0.88rem;padding:9px 12px;border-radius:999px;cursor:pointer;
-  border:1px solid var(--line);background:var(--card);color:var(--ink);
+  padding:10px 18px;border-radius:999px;border:2px solid var(--color-divider);background:transparent;
+  color:var(--color-neutral-700);font-size:14px;cursor:pointer;transition:all .15s;
 }
-.chips button[aria-pressed="true"]{background:var(--petrol);border-color:var(--petrol);color:#fff}
-
-.result{
-  background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
-  padding:18px;margin:4px 0 16px;
-}
-.result.empty{color:var(--ink-soft);font-size:0.95rem;text-align:center;padding:26px 18px}
-.dose{font-size:3rem;line-height:1;font-weight:700;letter-spacing:-0.03em;margin:2px 0 2px}
-.dose small{font-size:1.1rem;font-weight:600;letter-spacing:0}
-.dose-mg{color:var(--ink-soft);font-size:1rem;margin:0 0 14px}
-.facts{border-top:1px solid var(--line);margin-top:4px}
-.facts div{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--line);font-size:0.95rem}
-.facts div:last-child{border-bottom:0}
-.facts dt{color:var(--ink-soft);margin:0}
-.facts dd{margin:0;text-align:right;font-weight:600}
-
-.ladder{margin:14px 0 2px}
-.ladder-bar{position:relative;height:10px;border-radius:6px;background:var(--line)}
-.ladder-safe{position:absolute;top:0;bottom:0;border-radius:6px;background:var(--petrol);opacity:.35}
-.ladder-mark{position:absolute;top:-4px;width:4px;height:18px;border-radius:2px;background:var(--petrol)}
-.ladder-scale{display:flex;justify-content:space-between;font-size:0.76rem;color:var(--ink-soft);margin-top:6px}
-
-.result.blocked{border-color:var(--danger);border-width:2px;text-align:center;padding:22px 18px}
-.blocked-title{font-size:1.5rem;font-weight:700;color:var(--danger);margin:0 0 6px}
-.blocked-sub{color:var(--ink-soft);font-size:0.92rem;margin:0}
-.note.block{background:var(--danger-soft);border-color:var(--danger);border-width:2px;color:var(--ink);font-size:0.95rem}
-.note.block strong{color:var(--danger)}
-.note{border-radius:12px;padding:12px 14px;margin:10px 0;font-size:0.92rem;border:1px solid}
-.note.danger{background:var(--danger-soft);border-color:var(--danger);color:var(--ink)}
-.note.danger strong{color:var(--danger)}
-.note.warn{background:var(--warn-soft);border-color:var(--warn-line)}
-.note.info{background:var(--card);border-color:var(--line);color:var(--ink-soft)}
-
-details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:12px 0}
-summary{cursor:pointer;font-weight:600;font-size:0.95rem}
-details ul{margin:10px 0 0;padding-left:20px}
-details li{margin-bottom:6px;font-size:0.92rem}
-
+.chips button[aria-pressed="true"]{background:var(--color-text);border-color:var(--color-text);color:var(--color-bg);font-weight:800;box-shadow:var(--shadow-md)}
+.strength{width:100%;height:52px}
 .ghost{
-  width:100%;font:inherit;padding:12px;border-radius:11px;cursor:pointer;
-  border:1px solid var(--line);background:transparent;color:var(--ink-soft);
+  width:100%;height:46px;border-radius:14px;border:1px solid var(--color-divider);
+  background:transparent;color:var(--color-text);font-weight:800;font-size:14px;cursor:pointer;white-space:nowrap;
 }
-h2{font-size:1.05rem;margin:22px 0 8px}
-table{width:100%;border-collapse:collapse;font-size:0.9rem;margin:8px 0 16px}
-th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
-th{color:var(--ink-soft);font-weight:600}
-a{color:var(--petrol)}
-footer{color:var(--ink-soft);font-size:0.8rem;margin-top:26px;line-height:1.45}
-@media (prefers-reduced-motion:no-preference){
-  .result{transition:border-color .2s ease}
-}
+
+/* ── результат ── */
+.result{border-radius:24px;padding:24px;background:var(--color-surface);color:var(--color-neutral-700)}
+.result.on{background:var(--color-text);color:var(--color-bg)}
+.result .kicker{color:inherit;opacity:.75;margin-bottom:14px}
+.figure{font-weight:800;font-size:clamp(46px,7cqw,72px);line-height:.88;letter-spacing:-.035em}
+.figure span{font-size:20px;font-weight:800;opacity:.7;letter-spacing:0}
+.second{font-size:15px;opacity:.85;margin:14px 0 0}
+.cta{width:100%;height:50px;border-radius:14px;border:0;font-weight:800;font-size:15px;margin-top:18px;cursor:pointer;background:var(--color-bg);color:var(--color-text)}
+.result.blocked{background:var(--color-accent);color:#fff}
+.result.blocked .figure{font-size:clamp(21px,3cqw,27px);line-height:1.12}
+
+/* ── червоні блоки ── */
+.alert{border-radius:20px;padding:20px;background:var(--color-accent);color:#fff}
+.alert-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.alert-head i{width:26px;height:26px;border-radius:999px;background:#fff;color:var(--color-accent);display:grid;place-items:center;font-style:normal;font-weight:800;font-size:15px}
+.alert-head b{font-size:13px;text-transform:uppercase;letter-spacing:.09em;font-weight:800}
+.alert p{margin:0;padding:9px 0;border-top:1px solid rgba(255,255,255,.3);font-size:15px}
+.alert p b{font-weight:800}
+.poster{border-radius:24px;padding:24px;background:var(--color-accent);color:#fff}
+.poster h2{font-size:clamp(21px,3cqw,27px);line-height:1.12;margin-bottom:8px}
+.poster p{margin:0;padding:9px 0;border-top:1px solid rgba(255,255,255,.32);font-size:14px;display:flex;gap:10px}
+.poster p i{font-style:normal;opacity:.8}
+.soft{border-radius:20px;padding:20px;background:var(--color-surface)}
+.soft p{margin:0;padding:9px 0;border-top:1px solid var(--color-divider);font-size:15px}
+.soft .alert-head i{background:var(--color-accent);color:#fff}
+.soft .alert-head b{color:var(--color-accent-700)}
+
+/* ── рядки деталей ── */
+.rows div{display:flex;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid var(--color-divider)}
+.rows div:last-child{border-bottom:0}
+.rows dt{margin:0;font-size:13px;color:var(--color-neutral-700)}
+.rows dd{margin:0;font-weight:800;font-size:15px;white-space:nowrap;text-align:right}
+.steps{display:flex;flex-direction:column;gap:12px}
+.step{display:flex;gap:12px;align-items:flex-start;font-size:14px}
+.step i{flex:0 0 auto;width:22px;height:22px;border-radius:999px;background:var(--color-text);color:var(--color-bg);display:grid;place-items:center;font-style:normal;font-weight:800;font-size:11px}
+
+/* ── таймери ── */
+.timerhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.timerhead b{font-weight:800;font-size:17px}
+.status{border-radius:999px;padding:5px 12px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;border:1px solid var(--color-divider);color:var(--color-neutral-600)}
+.status.go{background:var(--color-text);color:var(--color-bg);border-color:var(--color-text)}
+.timerfig{font-weight:800;font-size:clamp(34px,5cqw,48px);line-height:1;letter-spacing:-.03em}
+.timernote{font-size:13px;color:var(--color-neutral-700);margin:10px 0 0}
+.bar{height:6px;background:var(--color-bg);border-radius:999px;margin-top:16px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--color-neutral-700);border-radius:999px;transition:width .3s}
+.bar.hot i{background:var(--color-accent)}
+.barcap{font-size:12px;color:var(--color-neutral-600);margin:8px 0 0}
+.logrow{display:flex;gap:12px;padding:11px 0;border-top:1px solid var(--color-divider);font-size:14px;align-items:baseline}
+.logrow b{font-weight:800;font-size:15px;min-width:52px}
+.logrow span:last-child{margin-left:auto;color:var(--color-neutral-700)}
+.mini{border-radius:999px;padding:6px 12px;font-size:12px;border:1px solid var(--color-divider);background:transparent;color:var(--color-text);cursor:pointer;font-weight:800}
+.srcgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.srcgrid h3{font-size:16px;margin-bottom:8px}
+.srcgrid p{margin:0;font-size:14px;color:var(--color-neutral-700)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:9px 8px 9px 0;border-bottom:1px solid var(--color-divider);vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--color-neutral-600)}
+.disclaimer{font-size:13px;color:var(--color-neutral-600);max-width:72ch;padding:0 18px 40px}
+[hidden]{display:none !important}
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="app">
 
-<header>
-  <h1>Скільки давати дитині</h1>
-  <p class="sub">Разова доза парацетамолу та ібупрофену за вагою. Працює офлайн, дані нікуди не надсилаються.</p>
+<div class="util">
+  <div class="wordmark" id="wordmark"></div>
+  <div class="pillgroup" role="group" aria-label="Мова">
+    <button type="button" id="lang-uk" aria-pressed="true">UA</button>
+    <button type="button" id="lang-en" aria-pressed="false">EN</button>
+  </div>
+  <button type="button" class="toggle" id="theme" aria-pressed="false"></button>
+</div>
+
+<header class="head">
+  <p class="kicker" id="kicker"></p>
+  <h1 id="h1"></h1>
+  <p id="sub"></p>
 </header>
 
-<nav role="tablist" aria-label="Розділи">
-  <button role="tab" id="tab-dose" aria-controls="panel-dose" aria-selected="true">Доза</button>
-  <button role="tab" id="tab-alt" aria-controls="panel-alt" aria-selected="false">Коли далі</button>
-  <button role="tab" id="tab-ref" aria-controls="panel-ref" aria-selected="false">Джерела</button>
-</nav>
+<div class="tabswrap">
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tab-dose" aria-selected="true"></button>
+    <button role="tab" id="tab-next" aria-selected="false"></button>
+    <button role="tab" id="tab-src" aria-selected="false"></button>
+  </div>
+</div>
 
-<!-- ───────────── ДОЗА ───────────── -->
-<section class="panel" id="panel-dose" role="tabpanel" aria-labelledby="tab-dose">
-
-  <fieldset>
-    <legend>Дитина</legend>
-    <label for="weight">Вага, кг</label>
-    <input type="number" id="weight" class="hero" inputmode="decimal" min="2" max="120" step="0.1" placeholder="12,5" autocomplete="off">
-    <div class="row age-row">
-      <div>
-        <label for="age">Вік, якщо знаєте</label>
-        <input type="number" id="age" inputmode="numeric" min="0" max="215" step="1" placeholder="3" autocomplete="off">
+<!-- ══ ДОЗА ══ -->
+<div class="grid" id="view-dose">
+  <div class="col left">
+    <section class="card">
+      <div class="lblrow"><span class="lbl" id="l-weight"></span><span id="l-required"></span></div>
+      <div class="weightbox" id="weightbox">
+        <input type="number" id="weight" inputmode="decimal" step="0.1" min="0" autocomplete="off">
+        <div class="unitside"><b id="l-kg"></b><div class="badge" id="w-ok" hidden>✓</div></div>
       </div>
-      <div>
-        <label for="ageUnit">Одиниці</label>
-        <select id="ageUnit">
-          <option value="months">місяців</option>
-          <option value="years" selected>років</option>
-        </select>
+      <div class="agerow">
+        <div class="agefield" id="agefield">
+          <input type="number" id="age" inputmode="numeric" step="1" min="0" autocomplete="off">
+          <div class="badge" id="a-ok" hidden>✓</div>
+        </div>
+        <select id="ageUnit"><option value="years"></option><option value="months"></option></select>
       </div>
-    </div>
-    <p class="hint">Вік не впливає на дозу — за ним калькулятор перевіряє вікові обмеження препарату.</p>
-  </fieldset>
+      <p class="note-sm" id="l-agenote"></p>
+    </section>
 
-  <fieldset>
-    <legend>Препарат</legend>
-    <div class="seg">
-      <button type="button" id="btn-paracetamol" aria-pressed="true">Парацетамол<span>10–15 мг/кг</span></button>
-      <button type="button" id="btn-ibuprofen" aria-pressed="false">Ібупрофен<span>5–10 мг/кг</span></button>
-    </div>
-  </fieldset>
+    <section class="soft" id="alert-child" hidden>
+      <div class="alert-head"><i>!</i><b id="l-attention1"></b></div>
+      <div id="alert-child-body"></div>
+    </section>
 
-  <fieldset>
-    <legend>Форма випуску</legend>
-    <div class="chips" id="formChips">
-      <button type="button" data-form="syrup" aria-pressed="true">Сироп</button>
-      <button type="button" data-form="supp" aria-pressed="false">Свічки</button>
-      <button type="button" data-form="tab" aria-pressed="false">Таблетки</button>
-      <button type="button" data-form="sachet" aria-pressed="false">Саше</button>
-      <button type="button" data-form="chew" aria-pressed="false">Жувальні</button>
-    </div>
-  </fieldset>
-
-  <fieldset>
-    <legend id="concLegend">Дозування на упаковці</legend>
-    <label for="preset">Готовий варіант</label>
-    <select id="preset"></select>
-    <div class="row" id="customRow" style="margin-top:10px">
-      <div>
-        <label for="concMg" id="concMgLabel">мг</label>
-        <input type="number" id="concMg" inputmode="decimal" min="1" max="1000" step="1">
+    <section class="card">
+      <div class="lblrow"><span class="lbl" id="l-drug"></span></div>
+      <div class="drugs">
+        <button type="button" id="d-paracetamol" aria-pressed="true"><b></b><small>10–15 мг/кг</small></button>
+        <button type="button" id="d-ibuprofen" aria-pressed="false"><b></b><small>5–10 мг/кг</small></button>
       </div>
-      <div id="concVolWrap">
-        <label for="concMl">на мл</label>
-        <input type="number" id="concMl" inputmode="decimal" min="1" max="20" step="0.5" value="5">
+      <div class="sect">
+        <div class="lblrow"><span class="lbl" id="l-form"></span></div>
+        <div class="chips" id="chips"></div>
       </div>
-    </div>
-  </fieldset>
-
-  <div id="result" class="result empty">Введіть вагу — покажу разову дозу.</div>
-  <div id="warnings"></div>
-
-  <button type="button" class="ghost" id="reset">Очистити</button>
-
-  <details>
-    <summary>Коли не рахувати дозу, а звертатися по допомогу</summary>
-    <ul>
-      <li>Дитині менше 3 місяців і температура 38 °C і вище.</li>
-      <li>Висип, який не бліднішає, якщо натиснути на нього склянкою.</li>
-      <li>Судоми, надмірна млявість, дитину важко розбудити, безперервний плач.</li>
-      <li>Утруднене або часте дихання, западання міжребер'їв, стогін на видиху.</li>
-      <li>Ознаки зневоднення: сухі губи, немає сліз, мало сечі, запалий тім'ячко.</li>
-      <li>Температура тримається понад 3 доби або стан погіршується.</li>
-      <li>Ви дали більше дози, ніж потрібно — телефонуйте 103 або до токсикологічного центру, навіть якщо дитина виглядає добре.</li>
-    </ul>
-  </details>
-</section>
-
-<!-- ───────────── ЧЕРГУВАННЯ ───────────── -->
-<section class="panel" id="panel-alt" role="tabpanel" aria-labelledby="tab-alt" hidden>
-  <div class="note warn">
-    <strong>Чергування — не розклад за годинником.</strong> NICE радить давати щось одне, поки дитині некомфортно;
-    міняти препарат, якщо перший не допоміг; і чергувати лише тоді, коли дискомфорт повертається раніше,
-    ніж настав час наступної дози. Одночасно два препарати не дають.
+      <div class="sect">
+        <p class="note-sm" style="margin:0 0 8px" id="l-strength"></p>
+        <select class="strength" id="preset"></select>
+      </div>
+      <div class="sect"><button type="button" class="ghost" id="clear"></button></div>
+    </section>
   </div>
 
-  <fieldset>
-    <legend>Коли була остання доза</legend>
-    <div class="row">
-      <div>
-        <label for="lastP">Парацетамол</label>
-        <input type="time" id="lastP">
+  <div class="col right">
+    <section class="result" id="result"></section>
+    <section class="alert" id="alert-drug" hidden>
+      <div class="alert-head"><i>!</i><b id="l-attention2"></b></div>
+      <div id="alert-drug-body"></div>
+    </section>
+    <section class="card" id="detail" hidden><div class="rows" id="rows"></div></section>
+    <section class="card" id="howcard" hidden>
+      <div class="lblrow"><span class="lbl" id="l-how"></span></div>
+      <div class="steps" id="steps"></div>
+    </section>
+    <section class="poster" id="poster"></section>
+  </div>
+</div>
+
+<!-- ══ КОЛИ ДАЛІ ══ -->
+<div class="grid" id="view-next" hidden>
+  <div class="col left">
+    <section class="card" id="timer-paracetamol"></section>
+    <section class="card" id="timer-ibuprofen"></section>
+    <section class="card">
+      <div class="lblrow"><span class="lbl" id="l-alt"></span></div>
+      <div id="alt-body"></div>
+    </section>
+  </div>
+  <div class="col right">
+    <section class="card">
+      <div class="lblrow">
+        <span class="lbl" id="l-log"></span>
+        <button type="button" class="mini" id="undo"></button>
       </div>
-      <div>
-        <label for="lastI">Ібупрофен</label>
-        <input type="time" id="lastI">
-      </div>
-    </div>
-    <div class="row" style="margin-top:10px">
-      <div>
-        <label for="cntP">Доз парацетамолу за добу</label>
-        <input type="number" id="cntP" inputmode="numeric" min="0" max="8" step="1" value="0">
-      </div>
-      <div>
-        <label for="cntI">Доз ібупрофену за добу</label>
-        <input type="number" id="cntI" inputmode="numeric" min="0" max="8" step="1" value="0">
-      </div>
-    </div>
-  </fieldset>
+      <div id="logbody"></div>
+    </section>
+    <section class="poster" id="poster2"></section>
+  </div>
+</div>
 
-  <div id="altResult" class="result empty">Вкажіть час останньої дози — порахую, коли можна наступну.</div>
-  <p class="sub">Час не зберігається: якщо закрити сторінку, поля будуть порожні.</p>
-</section>
-
-<!-- ───────────── ДЖЕРЕЛА ───────────── -->
-<section class="panel" id="panel-ref" role="tabpanel" aria-labelledby="tab-ref" hidden>
-  <h2>Формули, за якими рахує калькулятор</h2>
-  <table>
-    <tr><th></th><th>Парацетамол</th><th>Ібупрофен</th></tr>
-    <tr><td>Разова доза</td><td>10–15 мг/кг</td><td>5–10 мг/кг</td></tr>
-    <tr><td>Інтервал</td><td>кожні 4–6 год</td><td>кожні 6–8 год</td></tr>
-    <tr><td>Прийомів на добу</td><td>до 4</td><td>до 3</td></tr>
-    <tr><td>Максимум на добу</td><td>60 мг/кг, не більше 4 г</td><td>30 мг/кг, не більше 1200 мг</td></tr>
-    <tr><td>Стеля разової дози</td><td>1000 мг</td><td>400 мг</td></tr>
-    <tr><td>З якого віку</td><td>від 3 місяців без лікаря</td><td>від 3 місяців і 5 кг, до 6 місяців — з лікарем</td></tr>
-    <tr><td>Тверді форми</td><td>таблетки від 6 років, саше 250 мг від 4 років</td><td>таблетки 200 мг від 6 років і 20 кг</td></tr>
-  </table>
-  <p class="sub">Для ібупрофену взято обережнішу європейську добову межу 30 мг/кг. Частина джерел (США) допускає до 40 мг/кг на добу.</p>
-
-  <h2>На чому це базується</h2>
-  <ul>
-    <li>BNF for Children — вікові та вагові дози парацетамолу, добова межа 60 мг/кг.</li>
-    <li>NICE NG143 «Fever in under 5s» — лікуємо дискомфорт дитини, а не цифру на градуснику; два препарати одночасно не дають; чергування лише за потреби.</li>
-    <li>WHO Pocket Book of Hospital Care for Children — парацетамол 10–15 мг/кг.</li>
-    <li>MHRA / Toxbase — токсичність парацетамолу починається з 75–150 мг/кг на добу; звідси жорсткий контроль добової суми.</li>
-    <li>Інструкція виробника вашої упаковки — вона головніша за будь-який калькулятор.</li>
-  </ul>
-
-  <h2>Ці ліки дітям не дають</h2>
-  <table id="forbidden"></table>
-
-  <h2>Комбіновані препарати — калькулятор їх не рахує</h2>
-  <p class="sub">Під знайомим брендом часто продають кілька різних ліків. «Дитячий» і «дорослий» варіанти можуть відрізнятися не лише дозою, а й складом. Рахуйте дозу лише для чистого парацетамолу чи ібупрофену.</p>
-  <table id="combined"></table>
-
-  <h2>Про що калькулятор не знає</h2>
-  <ul>
-    <li>Хвороби печінки чи нирок, зневоднення, вітряна віспа, астма з непереносимістю НПЗЗ, вади серця, недоношеність.</li>
-    <li>Інші ліки, у складі яких уже є парацетамол або ібупрофен.</li>
-    <li>Вага, яку ви ввели по пам'яті. Зважте дитину — доза рахується саме від ваги.</li>
-  </ul>
-
-  <footer>
-    Це довідковий інструмент для батьків, а не медична консультація і не заміна лікарю.
-    Остаточне рішення про ліки для вашої дитини ухвалює лікар. Версія 0.8.0.
-  </footer>
-</section>
+<!-- ══ ДЖЕРЕЛА ══ -->
+<div id="view-src" hidden>
+  <div class="grid" style="padding-bottom:16px"><div class="srcgrid" id="srccards" style="grid-column:1/-1"></div></div>
+  <div class="grid" style="padding-bottom:16px">
+    <section class="card"><div class="lblrow"><span class="lbl" id="l-forbidden"></span></div><table id="t-forbidden"></table></section>
+    <section class="card">
+      <div class="lblrow"><span class="lbl" id="l-combined"></span></div>
+      <p class="note-sm" style="margin:0 0 10px" id="l-combined-sub"></p>
+      <table id="t-combined"></table>
+    </section>
+  </div>
+  <p class="disclaimer" id="disclaimer"></p>
+</div>
 
 </div>
 
@@ -366,6 +375,7 @@ const DRUGS = {
         { mg: 200, ml: 5, group: "eu", label: "200 мг / 5 мл — ben-u-ron Saft, Mexalen (DE, AT)" }
       ],
       supp: [
+        { mg: 50, group: "ua", label: "50 мг — Парацетамол супозиторії" },
         { mg: 80, group: "ua", label: "80 мг — Ефералган, Парацетамол Монфарм" },
         { mg: 100, group: "ua", label: "100 мг — Парацетамол супозиторії" },
         { mg: 150, group: "ua", label: "150 мг — Ефералган" },
@@ -465,6 +475,7 @@ const LIMITS = {
     concSchoolAgeMgPerMl: 50,     // 250 мг/5 мл — форма для дітей від 6 років
     /* номінал свічки → допустима вага, кг */
     supp: {
+      50:  { min: 3,  max: 6 },
       75:  { min: 3,  max: 5 },
       80:  { min: 5,  max: 10 },
       100: { min: 6,  max: 12 },
@@ -599,10 +610,11 @@ function computeDose(input) {
 
 /* Гейти допуску: чи можна цьому препарату в цій формі бути в руках цієї дитини.
    Залежать тільки від вводу, не від арифметики дози — тому викликаються ДО неї.
-   level "block" означає, що доза не показується взагалі. */
+   level "block" означає, що доза не показується взагалі.
+   Тексти живуть в i18n.js — тут лише коди й підстановки. */
 function checkGates(input) {
   const out = [];
-  const push = (level, code, text) => out.push({ level: level, code: code, text: text });
+  const push = (level, code, vars) => out.push({ level: level, code: code, vars: vars || {} });
 
   const drugId = input.drug;
   const drug = DRUGS[drugId];
@@ -621,42 +633,35 @@ function checkGates(input) {
 
   /* 1. Гарячка в перші три місяці — це завжди лікар */
   if (knownAge && months < LIMITS.doctorOnlyAgeMonths) {
-    push("block", "age_under_3m",
-      "<strong>Дитині менше 3 місяців.</strong> Гарячка в цьому віці — привід звернутися по медичну допомогу сьогодні, а не давати жарознижувальне вдома. Дозу для немовляти (зокрема ректальні форми від 3 кг) призначає лікар.");
+    push("block", "age_under_3m");
     return out;
   }
 
   /* 2. Ібупрофен: нижня межа і зона обережності */
   if (drugId === "ibuprofen") {
-    if (knownAge && months < lim.minAgeMonths) {
-      push("block", "ibu_under_3m",
-        "Ібупрофен не застосовують у дітей до 3 місяців. У цьому віці препаратом вибору є парацетамол, і призначає його лікар.");
-    } else if (knownAge && months < lim.cautionAgeMonths) {
-      push("warn", "ibu_under_6m",
-        "Європейські інструкції дозволяють ібупрофен з 3 місяців, американські (AAP, FDA) — лише з 6. Якщо симптоми тримаються довше <strong>24 годин</strong> або після трьох доз — до лікаря негайно.");
+    /* Окремої гілки "ібупрофен до 3 місяців" тут немає навмисно:
+       гейт doctorOnlyAgeMonths вище блокує цей вік для обох препаратів
+       і одразу виходить. Тест на осиротілі коди колись це вже спіймав. */
+    if (knownAge && months < lim.cautionAgeMonths) {
+      push("warn", "ibu_under_6m");
     }
     if (knownWeight && weight < lim.minWeightKg) {
-      push("block", "ibu_weight_below_5",
-        "Ібупрофен не застосовують при масі тіла менше 5 кг.");
+      push("block", "ibu_weight_below_5", { kg: lim.minWeightKg });
     } else if (form === "supp" && knownWeight && weight < lim.suppMinWeightKg) {
-      push("block", "ibu_supp_weight_below_6",
-        "Супозиторії ібупрофену протипоказані при масі менше 6 кг. Оберіть суспензію або парацетамол.");
+      push("block", "ibu_supp_weight_below_6", { kg: lim.suppMinWeightKg });
     }
     if (form === "syrup" && isFinite(conc) && isFinite(concMl) && conc / concMl >= CONC_FORTE) {
       if (knownAge && months < lim.forteMinAgeMonths) {
-        push("warn", "ibu_forte_age",
-          "Українська інструкція на форму 200 мг/5 мл — від 6 місяців і 8 кг, польська на ту саму концентрацію — від 3 місяців. Розбіжність реальна: якщо є звичайна суспензія 100 мг/5 мл, у цьому віці візьміть її.");
+        push("warn", "ibu_forte_age");
       } else if (knownWeight && weight < lim.forteMinWeightKg) {
-        push("warn", "ibu_forte_weight",
-          "Форма 200 мг/5 мл розрахована на масу від 8 кг. Для меншої дитини точніше відміряти звичайну суспензію 100 мг/5 мл.");
+        push("warn", "ibu_forte_weight", { kg: lim.forteMinWeightKg });
       }
     }
   }
 
   /* 3. Парацетамол: нижня межа за масою */
   if (drugId === "paracetamol" && knownWeight && weight < lim.minWeightKg) {
-    push("block", "par_weight_below_4",
-      "Маса менше 4 кг — доза розраховується за призначенням лікаря, з поправкою на вік від зачаття.");
+    push("block", "par_weight_below_4", { kg: lim.minWeightKg });
   }
 
   /* 4. Тверді таблетки: аспірація важливіша за арифметику */
@@ -664,35 +669,28 @@ function checkGates(input) {
     const tabRule = (lim.tab && lim.tab[conc]) || null;
     const minAge = tabRule ? tabRule.minAgeMonths : LIMITS.paracetamol.tabMinAgeMonths;
     if (knownAge && months < minAge) {
-      push("block", "tab_age",
-        "Таблетку " + conc + " мг не дають дітям до " + Math.round(minAge / 12) + " років: ризик поперхнутися, а поділена таблетка дозується неточно. Оберіть суспензію або свічки.");
+      push("block", "tab_age", { mg: conc, years: Math.round(minAge / 12) });
     } else if (!knownAge) {
-      push("warn", "tab_age_unknown",
-        "Вкажіть вік: тверді таблетки не дають дітям до 6 років, а номінали 200 і 400 мг мають власні вікові межі.");
+      push("warn", "tab_age_unknown");
     }
     if (drugId === "paracetamol" && conc >= 500 && knownAge &&
         months >= LIMITS.paracetamol.tabMinAgeMonths &&
         months < LIMITS.paracetamol.tab500PlMinAgeMonths) {
-      push("warn", "par_tab_500_age",
-        "Польський Apap 500 мг — від 12 років, українська інструкція на парацетамол 500 мг дозволяє з 6 років по половині таблетки. Якщо є сироп або свічки, у цьому віці вони точніші за поділену таблетку.");
+      push("warn", "par_tab_500_age");
     }
     if (tabRule && knownWeight && weight < tabRule.minWeightKg) {
-      push("block", "tab_weight",
-        "Таблетка " + conc + " мг розрахована на масу від " + tabRule.minWeightKg + " кг.");
+      push("block", "tab_weight", { mg: conc, kg: tabRule.minWeightKg });
     }
   }
 
-  /* 4а. Саше з гранулами: ковтати не треба, тому поріг нижчий за таблетки,
-     але номінал усе одно фіксований і має власний вік за інструкцією */
+  /* 4а. Саше з гранулами: ковтати не треба, тому поріг нижчий за таблетки */
   if (form === "sachet" && isFinite(conc)) {
     const rule = lim.sachet && lim.sachet[conc];
     const minAge = rule ? rule.minAgeMonths : 48;
     if (knownAge && months < minAge) {
-      push("block", "sachet_age",
-        "Саше " + conc + " мг за інструкцією призначене дітям від " + Math.round(minAge / 12) + " років. Доза в ньому фіксована й не ділиться — для меншої дитини потрібна рідка форма або свічки.");
+      push("block", "sachet_age", { mg: conc, years: Math.round(minAge / 12) });
     } else if (!knownAge) {
-      push("warn", "sachet_age_unknown",
-        "Вкажіть вік: саше має фіксовану дозу й власну вікову межу (250 мг — від 4 років, 500 мг — від 11).");
+      push("warn", "sachet_age_unknown");
     }
   }
 
@@ -701,15 +699,12 @@ function checkGates(input) {
     const rule = lim.chew && lim.chew[conc];
     if (rule) {
       if (knownAge && months < rule.minAgeMonths) {
-        push("block", "chew_age",
-          "Жувальні капсули " + conc + " мг призначені дітям від " + Math.round(rule.minAgeMonths / 12) + " років. Молодшій дитині потрібна суспензія.");
+        push("block", "chew_age", { mg: conc, years: Math.round(rule.minAgeMonths / 12) });
       }
       if (knownWeight && weight < rule.minWeightKg) {
-        push("block", "chew_weight",
-          "Жувальні капсули розраховані на масу від " + rule.minWeightKg + " кг.");
+        push("block", "chew_weight", { kg: rule.minWeightKg });
       } else if (rule.maxWeightKg && knownWeight && weight > rule.maxWeightKg) {
-        push("warn", "chew_weight_high",
-          "Ця форма розрахована на масу до " + rule.maxWeightKg + " кг. Для більшої дитини діють дорослі дозування.");
+        push("warn", "chew_weight_high", { kg: rule.maxWeightKg });
       }
     }
   }
@@ -719,11 +714,9 @@ function checkGates(input) {
     const range = lim.supp && lim.supp[conc];
     if (range) {
       if (weight < range.min) {
-        push("warn", "supp_nominal_low",
-          "Свічка " + conc + " мг за інструкцією призначена для маси від " + range.min + " кг. Для " + weight + " кг візьміть менший номінал.");
+        push("warn", "supp_nominal_low", { mg: conc, kg: range.min, weight: weight });
       } else if (range.max && weight > range.max) {
-        push("warn", "supp_nominal_high",
-          "Свічка " + conc + " мг розрахована на масу до " + range.max + " кг. Для більшої дитини зручніший інший номінал або рідка форма.");
+        push("warn", "supp_nominal_high", { mg: conc, kg: range.max });
       }
     }
   }
@@ -731,14 +724,12 @@ function checkGates(input) {
   /* 6. Концентрований сироп парацетамолу — форма для школярів */
   if (drugId === "paracetamol" && form === "syrup" && isFinite(conc) && isFinite(concMl) &&
       conc / concMl >= lim.concSchoolAgeMgPerMl && knownAge && months < lim.tabMinAgeMonths) {
-    push("warn", "conc_school_age",
-      "Концентрація 250 мг/5 мл — це форма для дітей від 6 років. Доза порахована правильно, але для меншої дитини точніше відміряти сироп 120 або 150 мг/5 мл.");
+    push("warn", "conc_school_age");
   }
 
   /* 7. Вік не вказано — вікові перевірки не виконані */
-  if (!knownAge && form !== "tab") {
-    push("info", "age_unknown",
-      "Вік не вказано, тому вікові обмеження не перевірені. Доза рахується тільки за вагою.");
+  if (!knownAge && form !== "tab" && form !== "sachet") {
+    push("info", "age_unknown");
   }
 
   return out;
@@ -753,66 +744,72 @@ function buildWarnings(input, dose) {
   const weight = Number(input.weightKg);
   const flags = (dose && dose.flags) || [];
   const out = checkGates(input);
-  const push = (level, code, text) => out.push({ level: level, code: code, text: text });
+  const push = (level, code, vars) => out.push({ level: level, code: code, vars: vars || {} });
 
   /* Якщо препарат у цьому віці чи формі взагалі не можна — далі не міркуємо */
   if (isBlocked(out)) return out;
 
-  if (flags.indexOf("supp_too_large") > -1) {
-    push("danger", "supp_too_large", "Свічка " + input.concMg + " мг завелика для ваги " + weight + " кг. Візьміть меншу — свічки не можна різати, діюча речовина в них розподілена нерівномірно.");
-  }
-  if (flags.indexOf("supp_below_min") > -1) {
-    push("warn", "supp_below_min", "Ця свічка дає менше за мінімальну ефективну дозу. Ефект може бути слабким — підберіть свічку більшого номіналу.");
-  }
-  if (flags.indexOf("sachet_too_large") > -1) {
-    push("danger", "sachet_too_large", "Саше " + input.concMg + " мг завелике для ваги " + weight + " кг. Гранули не діляться — потрібна рідка форма.");
-  }
-  if (flags.indexOf("sachet_below_min") > -1) {
-    push("warn", "sachet_below_min", "Це саше дає менше за мінімальну ефективну дозу для такої ваги.");
-  }
-  if (flags.indexOf("chew_too_large") > -1) {
-    push("danger", "chew_too_large", "Навіть одна капсула " + input.concMg + " мг перевищує дозу для цієї ваги.");
-  }
-  if (flags.indexOf("chew_below_min") > -1) {
-    push("warn", "chew_below_min", "Стільки капсул дає менше за мінімальну ефективну дозу.");
-  }
-  if (flags.indexOf("tab_too_large") > -1) {
-    push("danger", "tab_too_large", "Навіть половина таблетки " + input.concMg + " мг перевищує дозу для цієї ваги. Потрібна рідка форма або свічки.");
-  }
-  if (flags.indexOf("volume_large") > -1) {
-    push("warn", "volume_large", "Об'єм понад 20 мл — перевірте, чи правильно вказана концентрація на упаковці.");
-  }
-  if (flags.indexOf("conc_drops") > -1) {
-    push("warn", "conc_drops", "<strong>" + Math.round(input.concMg / input.concMl) + " мг в одному мілілітрі — це краплі, а не сироп.</strong> Концентрація вчетверо вища за звичайну суспензію. Ще раз звірте цифру на флаконі.");
-  }
-  if (flags.indexOf("conc_forte") > -1) {
-    push("warn", "conc_forte", "Це посилена форма («форте»). Вона вдвічі концентрованіша за звичайну — переконайтеся, що у вас у руках саме той флакон.");
-  }
+  const has = (f) => flags.indexOf(f) > -1;
 
-  if (input.drug === "ibuprofen") {
-    push("info", "ibu_contraindications", "Ібупрофен не дають при зневодненні, багаторазовому блюванні чи проносі, вітряній віспі, хворобах нирок і при астмі з непереносимістю НПЗЗ. Давати після їжі.");
-  }
+  if (has("supp_too_large")) push("danger", "supp_too_large", { mg: input.concMg, weight: weight });
+  if (has("supp_below_min")) push("warn", "supp_below_min");
+  if (has("sachet_too_large")) push("danger", "sachet_too_large", { mg: input.concMg, weight: weight });
+  if (has("sachet_below_min")) push("warn", "sachet_below_min");
+  if (has("chew_too_large")) push("danger", "chew_too_large", { mg: input.concMg });
+  if (has("chew_below_min")) push("warn", "chew_below_min");
+  if (has("tab_too_large")) push("danger", "tab_too_large", { mg: input.concMg });
+  if (has("volume_large")) push("warn", "volume_large");
+  if (has("conc_drops")) push("warn", "conc_drops", { mgPerMl: Math.round(input.concMg / input.concMl) });
+  if (has("conc_forte")) push("warn", "conc_forte");
+
+  if (input.drug === "ibuprofen") push("info", "ibu_contraindications");
 
   if (isFinite(weight) && weight > 40) {
-    push("info", "adult_ceiling", "За такої ваги діють дорослі стелі: разова доза не більша за " + drug.maxSingleMg + " мг, добова — за " + drug.maxDailyMg + " мг.");
+    push("info", "adult_ceiling", { single: drug.maxSingleMg, daily: drug.maxDailyMg });
   }
 
-  push("info", "duration_limit", "Без огляду лікаря жарознижувальне дають не довше <strong>3 днів</strong> поспіль. Для дитини 3–6 місяців межа інша: якщо температура тримається понад <strong>24 години</strong>, до лікаря треба звернутися одразу.");
-
-  push("info", "hidden_paracetamol", "Перевірте, чи немає парацетамолу або ібупрофену в інших ліках, які дитина вже приймає — комбіновані порошки від застуди часто їх містять. Два жарознижувальні одночасно не дають.");
+  push("info", "duration_limit");
+  push("info", "hidden_paracetamol");
 
   return out;
 }
 
-/* Найраніший час наступної дози. now і lastTaken — Date. */
-function nextDoseTime(drugId, lastTaken, dosesTaken, now) {
+/* Мінімальний проміжок між РІЗНИМИ препаратами при чергуванні, годин */
+const CROSS_INTERVAL_HOURS = 3;
+
+/* Найраніший час наступної дози.
+   lastTaken — остання доза цього ж препарату, lastOther — іншого.
+   Повертає ще й причину очікування: те саме ліки чи крос-правило. */
+function nextDoseTime(drugId, lastTaken, dosesTaken, now, lastOther) {
   const drug = DRUGS[drugId];
-  if (!drug || !(lastTaken instanceof Date) || isNaN(lastTaken)) return null;
+  if (!drug) return null;
   const taken = Math.max(0, Number(dosesTaken) || 0);
-  const next = new Date(lastTaken.getTime() + drug.intervalHours * 3600000);
+  const valid = (d) => d instanceof Date && !isNaN(d);
+
+  let at = null;
+  let reason = "none";
+  if (valid(lastTaken)) {
+    at = new Date(lastTaken.getTime() + drug.intervalHours * 3600000);
+    reason = "same";
+  }
+  if (valid(lastOther)) {
+    const cross = new Date(lastOther.getTime() + CROSS_INTERVAL_HOURS * 3600000);
+    if (!at || cross > at) {
+      at = cross;
+      reason = "cross";
+    }
+  }
+  if (!at) {
+    return { at: null, ready: true, reason: "none", waitMs: 0,
+             dosesLeft: Math.max(0, drug.maxDoses - taken),
+             limitReached: drug.maxDoses - taken <= 0 };
+  }
+  const ready = at <= now;
   return {
-    at: next,
-    ready: next <= now,
+    at: at,
+    ready: ready,
+    reason: ready ? "none" : reason,
+    waitMs: ready ? 0 : at - now,
     dosesLeft: Math.max(0, drug.maxDoses - taken),
     limitReached: drug.maxDoses - taken <= 0
   };
@@ -829,6 +826,7 @@ return {
   FORM_LABEL: FORM_LABEL,
   CONC_FORTE: CONC_FORTE,
   CONC_DROPS: CONC_DROPS,
+  CROSS_INTERVAL_HOURS: CROSS_INTERVAL_HOURS,
   MAX_SUPPOSITORIES: MAX_SUPPOSITORIES,
   MAX_UNITS: MAX_UNITS,
   computeDose: computeDose,
@@ -838,270 +836,735 @@ return {
 });
 </script>
 <script>
+/* Усі тексти застосунку. Ядро (calc-core.js) оперує лише кодами —
+   тут вони перетворюються на речення потрібною мовою.
+   Додаючи попередження в ядро, додайте його код сюди в обидві мови:
+   тест "кожен код має текст обома мовами" не дасть про це забути. */
+(function (root, factory) {
+  const api = factory();
+  if (typeof module === "object" && module.exports) module.exports = api;
+  else root.DozaI18n = api;
+})(typeof self !== "undefined" ? self : this, function () {
 "use strict";
 
-const { DRUGS, GROUPS, FORM_LABEL, FORBIDDEN, COMBINED, computeDose, buildWarnings,
-        checkGates, isBlocked, nextDoseTime } = window.Doza;
+/* Інтерфейс */
+const UI = {
+  uk: {
+    wordmark: ["доза", "дитині"],
+    dark: "Темна тема",
+    kicker: "Разова доза за вагою",
+    h1: "Скільки жарознижувального дати дитині",
+    sub: "Парацетамол та ібупрофен. Рахуємо у вашому браузері — дані нікуди не надсилаються.",
+    tabs: { dose: "Доза", next: "Коли далі", src: "Джерела" },
 
-const state = { drug: "paracetamol", form: "syrup" };
+    weightLabel: "Вага дитини",
+    required: "обов'язково",
+    kg: "кг",
+    ageLabel: "Вік",
+    years: "років",
+    months: "місяців",
+    ageNote: "Вік не змінює дозу — за ним перевіряємо вікові обмеження препарату.",
+    drugLabel: "Препарат",
+    paracetamol: "Парацетамол",
+    ibuprofen: "Ібупрофен",
+    formLabel: "Форма випуску",
+    forms: { syrup: "Сироп", supp: "Свічки", tab: "Таблетки", sachet: "Саше", chew: "Жувальні" },
+    strengthLabel: {
+      syrup: "Концентрація сиропу — вказана на упаковці",
+      supp: "Дозування свічки",
+      tab: "Дозування таблетки",
+      sachet: "Дозування саше",
+      chew: "Дозування капсули"
+    },
+    clear: "Очистити все",
+    attention: "Зверніть увагу",
 
-const $ = (id) => document.getElementById(id);
-const nf = (n, d = 2) => {
-  const s = Number(n).toFixed(d).replace(/\.?0+$/, "");
-  return s.replace(".", ",");
+    resultKicker: "Разова доза",
+    emptyResult: "Введіть вагу — покажемо разову дозу і коли можна наступну.",
+    blockedTitle: "Дозу не показуємо",
+    blockedSub: "У цьому віці або в цій формі препарат давати не можна.",
+    logDose: "Записати прийом",
+    units: { ml: "мл", supp: ["свічка", "свічки"], tab: ["табл.", "табл."], sachet: ["саше", "саше"], chew: ["капсула", "капсули"] },
+
+    rows: {
+      syringes: "Шприців по 5 мл",
+      whole: "Округлено до цілих",
+      interval: "Наступна доза",
+      maxDoses: "Прийомів на добу",
+      maxDaily: "Максимум за добу",
+      range: "Дозволений діапазон"
+    },
+    intervalText: { paracetamol: "не раніше ніж через 4 год", ibuprofen: "не раніше ніж через 6 год" },
+
+    howTitle: "Як дати",
+    how: [
+      "Зважте дитину — доза рахується від ваги, не від віку.",
+      "Відміряйте шприцом або мірною ложкою з упаковки, не столовою.",
+      "Запишіть час, щоб не дати наступну дозу зарано."
+    ],
+
+    posterTitle: "Не рахуйте дозу — потрібен лікар",
+    poster: [
+      "Дитині менше 3 місяців і температура 38 °C і вище.",
+      "Висип, який не бліднішає, якщо натиснути склянкою.",
+      "Судоми, млява дитина, яку важко розбудити, безперервний плач.",
+      "Утруднене дихання, зневоднення або температура понад 3 доби."
+    ],
+
+    ready: "можна давати",
+    waiting: "зачекайте",
+    now: "Зараз",
+    lastAt: (t) => "Останній прийом о " + t,
+    noneYet: "Ще не давали сьогодні",
+    nextAt: (last, next) => "Останній прийом о " + last + " · Наступний прийом о " + next,
+    crossAt: (other, t) => "3 год після того, як дали " + other + " — можна о " + t,
+    perDay: (n, max, mg, maxMg) => "За добу: " + n + "/" + max + " · " + mg + " з " + maxMg + " мг",
+    altTitle: "Про чергування",
+    alt: [
+      "Чергують тоді, коли один препарат не тримає температуру, і бажано за порадою лікаря. Двох одночасно не дають.",
+      "Між різними препаратами — щонайменше 3 години. Між дозами того самого — повний інтервал."
+    ],
+    logTitle: "Журнал прийомів",
+    undo: "Скасувати останній",
+    logEmpty: "Поки що жодного запису. Запишіть прийом на вкладці «Доза».",
+
+    srcCards: [
+      { t: "Дозування", b: "Парацетамол 10–15 мг/кг на прийом, ібупрофен 5–10 мг/кг. Рахуємо за верхньою межею, округлюємо тільки вниз." },
+      { t: "Інтервали", b: "Парацетамол не частіше ніж кожні 4–6 годин, до 4 разів на добу. Ібупрофен кожні 6–8 годин, до 3 разів." },
+      { t: "Межі", b: "Парацетамол максимум 60 мг/кг і 4 г на добу. Ібупрофен 30 мг/кг і 1200 мг. Разова доза не більша за 1000 і 400 мг відповідно." },
+      { t: "Джерела", b: "BNF for Children, NICE NG143, WHO Pocket Book, інструкції виробників з Держреєстру України та Rejestr Produktów Leczniczych." }
+    ],
+    forbiddenTitle: "Ці ліки дітям не дають",
+    combinedTitle: "Комбіновані препарати калькулятор не рахує",
+    combinedSub: "Під одним брендом продають кілька різних ліків. Рахуйте дозу лише для чистого парацетамолу чи ібупрофену.",
+    thDrug: "Препарат", thRule: "Обмеження", thWhy: "Чому", thWhat: "Що всередині",
+    disclaimer: "Це довідковий інструмент для батьків. Він не замінює огляд лікаря і не ставить діагноз. Остаточне рішення про ліки для вашої дитини ухвалює лікар. Усі дані лишаються у вашому браузері."
+  },
+
+  en: {
+    wordmark: ["dose", "for kids"],
+    dark: "Dark mode",
+    kicker: "Single dose by weight",
+    h1: "How much fever medicine to give your child",
+    sub: "Paracetamol and ibuprofen. Calculated in your browser — nothing is sent anywhere.",
+    tabs: { dose: "Dose", next: "What next", src: "Sources" },
+
+    weightLabel: "Child's weight",
+    required: "required",
+    kg: "kg",
+    ageLabel: "Age",
+    years: "years",
+    months: "months",
+    ageNote: "Age doesn't change the dose — it's used to check the medicine's age limits.",
+    drugLabel: "Medicine",
+    paracetamol: "Paracetamol",
+    ibuprofen: "Ibuprofen",
+    formLabel: "Form",
+    forms: { syrup: "Syrup", supp: "Suppository", tab: "Tablets", sachet: "Sachet", chew: "Chewable" },
+    strengthLabel: {
+      syrup: "Syrup strength — printed on the bottle",
+      supp: "Suppository strength",
+      tab: "Tablet strength",
+      sachet: "Sachet strength",
+      chew: "Capsule strength"
+    },
+    clear: "Clear all",
+    attention: "Please note",
+
+    resultKicker: "Single dose",
+    emptyResult: "Enter the weight — we'll show the dose and when the next one is allowed.",
+    blockedTitle: "No dose shown",
+    blockedSub: "This medicine must not be given at this age or in this form.",
+    logDose: "Log this dose",
+    units: { ml: "ml", supp: ["suppository", "suppositories"], tab: ["tab.", "tab."], sachet: ["sachet", "sachets"], chew: ["capsule", "capsules"] },
+
+    rows: {
+      syringes: "5 ml syringes",
+      whole: "Rounded to whole units",
+      interval: "Next dose",
+      maxDoses: "Doses per day",
+      maxDaily: "Max per day",
+      range: "Allowed range"
+    },
+    intervalText: { paracetamol: "no sooner than 4 h", ibuprofen: "no sooner than 6 h" },
+
+    howTitle: "How to give it",
+    how: [
+      "Weigh the child — the dose follows weight, not age.",
+      "Measure with the syringe or spoon from the box, not a kitchen spoon.",
+      "Note the time so the next dose isn't given too early."
+    ],
+
+    posterTitle: "Don't calculate — call a doctor",
+    poster: [
+      "Under 3 months old with a temperature of 38 °C or above.",
+      "A rash that doesn't fade when pressed with a glass.",
+      "Seizures, a floppy child who is hard to wake, constant crying.",
+      "Laboured breathing, dehydration, or fever lasting over 3 days."
+    ],
+
+    ready: "can be given",
+    waiting: "please wait",
+    now: "Now",
+    lastAt: (t) => "Last dose at " + t,
+    noneYet: "None given yet today",
+    nextAt: (last, next) => "Last dose at " + last + " · Next dose at " + next,
+    crossAt: (other, t) => "3 h after " + other + " — allowed at " + t,
+    perDay: (n, max, mg, maxMg) => "Today: " + n + "/" + max + " · " + mg + " of " + maxMg + " mg",
+    altTitle: "About alternating",
+    alt: [
+      "Alternate only when one medicine isn't controlling the fever, ideally on medical advice. Never give both at once.",
+      "At least 3 hours between different medicines. A full interval between doses of the same one."
+    ],
+    logTitle: "Dose log",
+    undo: "Undo last",
+    logEmpty: "No entries yet. Log a dose on the \u201cDose\u201d tab.",
+
+    srcCards: [
+      { t: "Dosing", b: "Paracetamol 10–15 mg/kg per dose, ibuprofen 5–10 mg/kg. We calculate at the upper end and only ever round down." },
+      { t: "Intervals", b: "Paracetamol no more often than every 4–6 hours, up to 4 times a day. Ibuprofen every 6–8 hours, up to 3 times." },
+      { t: "Limits", b: "Paracetamol max 60 mg/kg and 4 g per day. Ibuprofen 30 mg/kg and 1200 mg. Single doses capped at 1000 and 400 mg." },
+      { t: "Sources", b: "BNF for Children, NICE NG143, WHO Pocket Book, and manufacturer leaflets from the Ukrainian and Polish medicine registers." }
+    ],
+    forbiddenTitle: "Never give these to children",
+    combinedTitle: "Combination medicines aren't calculated here",
+    combinedSub: "One brand often covers several different medicines. Only calculate doses for plain paracetamol or ibuprofen.",
+    thDrug: "Medicine", thRule: "Limit", thWhy: "Why", thWhat: "What's inside",
+    disclaimer: "This is a reference tool for parents. It does not replace a medical examination and does not diagnose. Decisions about your child's medicine are made by a doctor. All data stays in your browser."
+  }
 };
 
-/* ---------- вкладки ---------- */
-document.querySelectorAll('[role="tab"]').forEach((tab) => {
-  tab.addEventListener("click", () => {
-    document.querySelectorAll('[role="tab"]').forEach((t) => {
-      const on = t === tab;
-      t.setAttribute("aria-selected", String(on));
-      $(t.getAttribute("aria-controls")).hidden = !on;
-    });
-  });
-});
+/* Повідомлення калькулятора. Ключ — код із ядра. */
+const NOTES = {
+  age_under_3m: {
+    uk: () => "<b>Дитині менше 3 місяців.</b> Гарячка в цьому віці — привід звернутися по медичну допомогу сьогодні, а не давати жарознижувальне вдома. Дозу для немовляти призначає лікар.",
+    en: () => "<b>The child is under 3 months old.</b> Fever at this age needs medical attention today, not a home dose. A doctor prescribes for infants."
+  },
+  ibu_under_6m: {
+    uk: () => "Європейські інструкції дозволяють ібупрофен з 3 місяців, американські (AAP, FDA) — лише з 6. Якщо симптоми тримаються довше <b>24 годин</b> або після трьох доз — до лікаря негайно.",
+    en: () => "European leaflets allow ibuprofen from 3 months; AAP and FDA say 6. If symptoms last over <b>24 hours</b> or persist after three doses, see a doctor promptly."
+  },
+  ibu_weight_below_5: {
+    uk: (v) => "Ібупрофен не застосовують при масі тіла менше " + v.kg + " кг.",
+    en: (v) => "Ibuprofen is not used below " + v.kg + " kg of body weight."
+  },
+  ibu_supp_weight_below_6: {
+    uk: (v) => "Супозиторії ібупрофену протипоказані при масі менше " + v.kg + " кг. Оберіть суспензію або парацетамол.",
+    en: (v) => "Ibuprofen suppositories are contraindicated below " + v.kg + " kg. Use the suspension or paracetamol instead."
+  },
+  ibu_forte_age: {
+    uk: () => "Українська інструкція на форму 200 мг/5 мл — від 6 місяців і 8 кг, польська на ту саму концентрацію — від 3 місяців. Якщо є звичайна суспензія 100 мг/5 мл, у цьому віці візьміть її.",
+    en: () => "The Ukrainian leaflet puts 200 mg/5 ml at 6 months and 8 kg; the Polish one allows 3 months for the same strength. If you have the 100 mg/5 ml suspension, use that."
+  },
+  ibu_forte_weight: {
+    uk: (v) => "Форма 200 мг/5 мл розрахована на масу від " + v.kg + " кг. Для меншої дитини точніше відміряти звичайну суспензію 100 мг/5 мл.",
+    en: (v) => "The 200 mg/5 ml strength is intended from " + v.kg + " kg. Below that, the 100 mg/5 ml suspension measures more accurately."
+  },
+  par_weight_below_4: {
+    uk: (v) => "Маса менше " + v.kg + " кг — дозу розраховує лікар, з поправкою на вік від зачаття.",
+    en: (v) => "Below " + v.kg + " kg the dose is set by a doctor, adjusted for post-conceptual age."
+  },
+  tab_age: {
+    uk: (v) => "Таблетку " + v.mg + " мг не дають дітям до " + v.years + " років: ризик поперхнутися, а поділена таблетка дозується неточно. Оберіть суспензію або свічки.",
+    en: (v) => "A " + v.mg + " mg tablet is not given under " + v.years + ": choking risk, and a split tablet doses inaccurately. Use suspension or suppositories."
+  },
+  tab_age_unknown: {
+    uk: () => "Вкажіть вік: тверді таблетки не дають дітям до 6 років, а номінали 200 і 400 мг мають власні вікові межі.",
+    en: () => "Enter the age: tablets aren't given under 6, and the 200 and 400 mg strengths have their own limits."
+  },
+  tab_weight: {
+    uk: (v) => "Таблетка " + v.mg + " мг розрахована на масу від " + v.kg + " кг.",
+    en: (v) => "The " + v.mg + " mg tablet is intended from " + v.kg + " kg."
+  },
+  par_tab_500_age: {
+    uk: () => "Польський Apap 500 мг — від 12 років, українська інструкція дозволяє з 6 років по половині таблетки. Якщо є сироп або свічки, вони точніші за поділену таблетку.",
+    en: () => "Polish Apap 500 mg starts at 12; the Ukrainian leaflet allows half a tablet from 6. Syrup or suppositories dose more precisely than a split tablet."
+  },
+  sachet_age: {
+    uk: (v) => "Саше " + v.mg + " мг за інструкцією призначене дітям від " + v.years + " років. Доза в ньому фіксована й не ділиться — для меншої дитини потрібна рідка форма або свічки.",
+    en: (v) => "The " + v.mg + " mg sachet is licensed from " + v.years + " years. Its dose is fixed and can't be split — younger children need a liquid or suppository."
+  },
+  sachet_age_unknown: {
+    uk: () => "Вкажіть вік: саше має фіксовану дозу й власну вікову межу (250 мг — від 4 років, 500 мг — від 11).",
+    en: () => "Enter the age: sachets have a fixed dose and their own limits (250 mg from 4 years, 500 mg from 11)."
+  },
+  chew_age: {
+    uk: (v) => "Жувальні капсули " + v.mg + " мг призначені дітям від " + v.years + " років. Молодшій дитині потрібна суспензія.",
+    en: (v) => "Chewable " + v.mg + " mg capsules are licensed from " + v.years + " years. Younger children need the suspension."
+  },
+  chew_weight: {
+    uk: (v) => "Жувальні капсули розраховані на масу від " + v.kg + " кг.",
+    en: (v) => "Chewable capsules are intended from " + v.kg + " kg."
+  },
+  chew_weight_high: {
+    uk: (v) => "Ця форма розрахована на масу до " + v.kg + " кг. Для більшої дитини діють дорослі дозування.",
+    en: (v) => "This form is intended up to " + v.kg + " kg. Above that, adult dosing applies."
+  },
+  supp_nominal_low: {
+    uk: (v) => "Свічка " + v.mg + " мг за інструкцією призначена для маси від " + v.kg + " кг. Для " + v.weight + " кг візьміть менший номінал.",
+    en: (v) => "The " + v.mg + " mg suppository is intended from " + v.kg + " kg. At " + v.weight + " kg use a smaller one."
+  },
+  supp_nominal_high: {
+    uk: (v) => "Свічка " + v.mg + " мг розрахована на масу до " + v.kg + " кг. Для більшої дитини зручніший інший номінал або рідка форма.",
+    en: (v) => "The " + v.mg + " mg suppository is intended up to " + v.kg + " kg. A larger strength or a liquid suits a bigger child."
+  },
+  conc_school_age: {
+    uk: () => "Концентрація 250 мг/5 мл — це форма для дітей від 6 років. Доза порахована правильно, але для меншої дитини точніше відміряти сироп 120 або 150 мг/5 мл.",
+    en: () => "250 mg/5 ml is the school-age strength. The dose is right, but 120 or 150 mg/5 ml measures more precisely for a younger child."
+  },
+  age_unknown: {
+    uk: () => "Вік не вказано, тому вікові обмеження не перевірені. Доза рахується тільки за вагою.",
+    en: () => "No age given, so age limits weren't checked. The dose is based on weight alone."
+  },
+  supp_too_large: {
+    uk: (v) => "Свічка " + v.mg + " мг завелика для ваги " + v.weight + " кг. Візьміть меншу — свічки не можна різати, діюча речовина в них розподілена нерівномірно.",
+    en: (v) => "A " + v.mg + " mg suppository is too large for " + v.weight + " kg. Use a smaller one — suppositories must not be cut, the drug isn't evenly distributed."
+  },
+  supp_below_min: {
+    uk: () => "Ця свічка дає менше за мінімальну ефективну дозу. Ефект може бути слабким — підберіть свічку більшого номіналу.",
+    en: () => "This suppository gives less than the minimum effective dose. Consider a larger strength."
+  },
+  sachet_too_large: {
+    uk: (v) => "Саше " + v.mg + " мг завелике для ваги " + v.weight + " кг. Гранули не діляться — потрібна рідка форма.",
+    en: (v) => "A " + v.mg + " mg sachet is too large for " + v.weight + " kg. Granules can't be split — use a liquid."
+  },
+  sachet_below_min: {
+    uk: () => "Це саше дає менше за мінімальну ефективну дозу для такої ваги.",
+    en: () => "This sachet gives less than the minimum effective dose for this weight."
+  },
+  chew_too_large: {
+    uk: (v) => "Навіть одна капсула " + v.mg + " мг перевищує дозу для цієї ваги.",
+    en: (v) => "Even a single " + v.mg + " mg capsule exceeds the dose for this weight."
+  },
+  chew_below_min: {
+    uk: () => "Стільки капсул дає менше за мінімальну ефективну дозу.",
+    en: () => "This number of capsules is below the minimum effective dose."
+  },
+  tab_too_large: {
+    uk: (v) => "Навіть половина таблетки " + v.mg + " мг перевищує дозу для цієї ваги. Потрібна рідка форма або свічки.",
+    en: (v) => "Even half a " + v.mg + " mg tablet exceeds the dose for this weight. Use a liquid or suppositories."
+  },
+  volume_large: {
+    uk: () => "Об'єм понад 20 мл — перевірте, чи правильно вказана концентрація на упаковці.",
+    en: () => "Over 20 ml in one dose — double-check the strength printed on the box."
+  },
+  conc_drops: {
+    uk: (v) => "<b>" + v.mgPerMl + " мг в одному мілілітрі — це краплі, а не сироп.</b> Концентрація вчетверо вища за звичайну суспензію. Ще раз звірте цифру на флаконі.",
+    en: (v) => "<b>" + v.mgPerMl + " mg per millilitre means drops, not syrup.</b> That's four times the usual suspension. Check the bottle again."
+  },
+  conc_forte: {
+    uk: () => "Це посилена форма («форте»). Вона вдвічі концентрованіша за звичайну — переконайтеся, що у вас у руках саме той флакон.",
+    en: () => "This is the \u201cforte\u201d strength — twice as concentrated as the standard one. Make sure it's the bottle in your hand."
+  },
+  ibu_contraindications: {
+    uk: () => "Ібупрофен не дають при зневодненні, багаторазовому блюванні чи проносі, вітряній віспі, хворобах нирок і при астмі з непереносимістю НПЗЗ. Давати після їжі.",
+    en: () => "Avoid ibuprofen with dehydration, repeated vomiting or diarrhoea, chickenpox, kidney disease, or NSAID-sensitive asthma. Give it after food."
+  },
+  adult_ceiling: {
+    uk: (v) => "За такої ваги діють дорослі стелі: разова доза не більша за " + v.single + " мг, добова — за " + v.daily + " мг.",
+    en: (v) => "At this weight adult ceilings apply: no more than " + v.single + " mg per dose and " + v.daily + " mg per day."
+  },
+  duration_limit: {
+    uk: () => "Без огляду лікаря жарознижувальне дають не довше <b>3 днів</b> поспіль. Для дитини 3–6 місяців межа інша: якщо температура тримається понад <b>24 години</b>, до лікаря треба звернутися одразу.",
+    en: () => "Without a doctor's review, don't give fever medicine for more than <b>3 days</b> in a row. For a 3–6 month old the limit is <b>24 hours</b>."
+  },
+  hidden_paracetamol: {
+    uk: () => "Перевірте, чи немає парацетамолу або ібупрофену в інших ліках, які дитина вже приймає — комбіновані порошки від застуди часто їх містять. Два жарознижувальні одночасно не дають.",
+    en: () => "Check whether other medicines already contain paracetamol or ibuprofen — cold and flu sachets often do. Never give two fever medicines at once."
+  }
+};
 
-/* ---------- вибір препарату і форми ---------- */
-function selectDrug(id) {
-  state.drug = id;
-  $("btn-paracetamol").setAttribute("aria-pressed", String(id === "paracetamol"));
-  $("btn-ibuprofen").setAttribute("aria-pressed", String(id === "ibuprofen"));
-  buildPresets();
-  calculate();
+function noteText(note, lang) {
+  const entry = NOTES[note.code];
+  if (!entry) return note.code;
+  const fn = entry[lang] || entry.uk;
+  return fn(note.vars || {});
 }
-$("btn-paracetamol").addEventListener("click", () => selectDrug("paracetamol"));
-$("btn-ibuprofen").addEventListener("click", () => selectDrug("ibuprofen"));
 
-$("formChips").addEventListener("click", (e) => {
-  const btn = e.target.closest("button[data-form]");
-  if (!btn) return;
-  state.form = btn.dataset.form;
-  $("formChips").querySelectorAll("button").forEach((b) =>
-    b.setAttribute("aria-pressed", String(b === btn))
-  );
-  buildPresets();
-  calculate();
+return { UI: UI, NOTES: NOTES, noteText: noteText };
 });
+</script>
+<script>
+"use strict";
+const { DRUGS, GROUPS, FORM_LABEL, FORBIDDEN, COMBINED, LIMITS,
+        computeDose, buildWarnings, checkGates, isBlocked, nextDoseTime } = window.Doza;
+const { UI, noteText } = window.DozaI18n;
 
-function syncFormChips() {
-  const drug = DRUGS[state.drug];
-  let available = null;
-  $("formChips").querySelectorAll("button").forEach((b) => {
-    const list = drug.forms[b.dataset.form];
-    const ok = Array.isArray(list) && list.length > 0;
-    b.hidden = !ok;
-    if (ok && !available) available = b.dataset.form;
-  });
-  const current = drug.forms[state.form];
-  if (!Array.isArray(current) || !current.length) state.form = available || "syrup";
-  $("formChips").querySelectorAll("button").forEach((b) =>
-    b.setAttribute("aria-pressed", String(b.dataset.form === state.form))
-  );
+const STORE = "kids-dose-calc-v2";
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, html) => {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (html !== undefined) n.innerHTML = html;
+  return n;
+};
+
+const state = {
+  lang: "uk", theme: "light", tab: "dose",
+  drug: "paracetamol", form: "syrup", presetIndex: 0,
+  weight: "", age: "", ageUnit: "years",
+  doses: []
+};
+
+/* ── збереження ── */
+function save() {
+  try {
+    const { lang, theme, drug, form, presetIndex, weight, age, ageUnit, doses } = state;
+    localStorage.setItem(STORE, JSON.stringify({ lang, theme, drug, form, presetIndex, weight, age, ageUnit, doses }));
+  } catch (e) { /* приватний режим — просто не зберігаємо */ }
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    Object.keys(data).forEach((k) => { if (k in state) state[k] = data[k]; });
+    state.doses = (state.doses || []).filter((d) => d && d.t).slice(0, 30);
+  } catch (e) { /* зіпсовані дані — стартуємо з чистого */ }
 }
 
-function buildPresets() {
-  syncFormChips();
+/* ── формат ── */
+const t = () => UI[state.lang];
+const locale = () => (state.lang === "uk" ? "uk-UA" : "en-GB");
+function nf(n, d) {
+  const s = Number(n).toFixed(d === undefined ? 1 : d).replace(/\.0$/, "");
+  return state.lang === "uk" ? s.replace(".", ",") : s;
+}
+function hhmm(ts) {
+  return new Date(ts).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit", hour12: false });
+}
+function plural(list, n) { return n === 1 ? list[0] : list[1]; }
+
+/* ── ввід ── */
+const weightNum = () => { const v = parseFloat(String(state.weight).replace(",", ".")); return isFinite(v) ? v : NaN; };
+function ageMonths() {
+  const v = parseFloat(String(state.age).replace(",", "."));
+  if (!isFinite(v) || v < 0) return null;
+  return state.ageUnit === "years" ? v * 12 : v;
+}
+function currentPreset() {
+  const list = DRUGS[state.drug].forms[state.form] || [];
+  return list[state.presetIndex] || list[0] || null;
+}
+function input() {
+  const p = currentPreset();
+  return {
+    drug: state.drug, form: state.form,
+    weightKg: weightNum(), ageMonths: ageMonths(),
+    concMg: p ? p.mg : NaN, concMl: p && p.ml ? p.ml : null
+  };
+}
+
+/* ── статичні написи ── */
+function paintChrome() {
+  const T = t();
+  document.documentElement.lang = state.lang;
+  $("wordmark").innerHTML = T.wordmark[0] + '<i>.</i>' + T.wordmark[1];
+  $("theme").textContent = T.dark;
+  $("kicker").textContent = T.kicker;
+  $("h1").textContent = T.h1;
+  $("sub").textContent = T.sub;
+  $("tab-dose").textContent = T.tabs.dose;
+  $("tab-next").textContent = T.tabs.next;
+  $("tab-src").textContent = T.tabs.src;
+  $("l-weight").textContent = T.weightLabel;
+  $("l-required").textContent = T.required;
+  $("l-kg").textContent = T.kg;
+  $("l-agenote").textContent = T.ageNote;
+  $("l-drug").textContent = T.drugLabel;
+  $("l-form").textContent = T.formLabel;
+  $("l-attention1").textContent = T.attention;
+  $("l-attention2").textContent = T.attention;
+  $("l-how").textContent = T.howTitle;
+  $("l-alt").textContent = T.altTitle;
+  $("l-log").textContent = T.logTitle;
+  $("undo").textContent = T.undo;
+  $("clear").textContent = T.clear;
+  $("l-forbidden").textContent = T.forbiddenTitle;
+  $("l-combined").textContent = T.combinedTitle;
+  $("l-combined-sub").textContent = T.combinedSub;
+  $("disclaimer").textContent = T.disclaimer;
+  $("d-paracetamol").querySelector("b").textContent = T.paracetamol;
+  $("d-ibuprofen").querySelector("b").textContent = T.ibuprofen;
+  $("weight").placeholder = state.lang === "uk" ? "12,5" : "12.5";
+  $("age").placeholder = "3";
+  $("ageUnit").options[0].textContent = T.years;
+  $("ageUnit").options[1].textContent = T.months;
+  $("lang-uk").setAttribute("aria-pressed", String(state.lang === "uk"));
+  $("lang-en").setAttribute("aria-pressed", String(state.lang === "en"));
+
+  $("steps").innerHTML = "";
+  T.how.forEach((s, i) => $("steps").appendChild(el("div", "step", "<i>" + (i + 1) + "</i><span>" + s + "</span>")));
+
+  [$("poster"), $("poster2")].forEach((p) => {
+    p.innerHTML = "<h2>" + T.posterTitle + "</h2>" +
+      T.poster.map((r) => '<p><i>→</i><span>' + r + "</span></p>").join("");
+  });
+
+  $("alt-body").innerHTML = T.alt.map((p) => '<p style="margin:0 0 10px;font-size:14px">' + p + "</p>").join("");
+
+  $("srccards").innerHTML = T.srcCards
+    .map((c) => '<section class="card"><h3>' + c.t + "</h3><p>" + c.b + "</p></section>").join("");
+  $("t-forbidden").innerHTML = "<tr><th>" + T.thDrug + "</th><th>" + T.thRule + "</th><th>" + T.thWhy + "</th></tr>" +
+    FORBIDDEN.map((f) => "<tr><td>" + f.name + "</td><td>" + f.rule + "</td><td>" + f.why + "</td></tr>").join("");
+  $("t-combined").innerHTML = "<tr><th>" + T.thDrug + "</th><th>" + T.thWhat + "</th><th>" + T.thRule + "</th></tr>" +
+    COMBINED.map((c) => "<tr><td>" + c.name + "</td><td>" + c.what + "</td><td>" + c.rule + "</td></tr>").join("");
+}
+
+/* ── форми та пресети ── */
+function paintChips() {
+  const T = t();
   const drug = DRUGS[state.drug];
-  const list = drug.forms[state.form];
+  const box = $("chips");
+  box.innerHTML = "";
+  Object.keys(FORM_LABEL).forEach((key) => {
+    const list = drug.forms[key];
+    if (!Array.isArray(list) || !list.length) return;
+    const b = el("button", null, T.forms[key]);
+    b.type = "button";
+    b.dataset.form = key;
+    b.setAttribute("aria-pressed", String(key === state.form));
+    box.appendChild(b);
+  });
+  if (!box.querySelector('[aria-pressed="true"]')) {
+    const first = box.querySelector("button");
+    if (first) { state.form = first.dataset.form; first.setAttribute("aria-pressed", "true"); }
+  }
+  $("l-strength").textContent = T.strengthLabel[state.form];
+}
+
+function paintPresets() {
+  const list = DRUGS[state.drug].forms[state.form] || [];
   const sel = $("preset");
   sel.innerHTML = "";
   GROUPS.forEach(([key, title]) => {
-    const items = list.map((item, i) => [item, i]).filter(([item]) => item.group === key);
+    const items = list.map((it, i) => [it, i]).filter(([it]) => it.group === key);
     if (!items.length) return;
-    const grp = document.createElement("optgroup");
-    grp.label = title;
-    items.forEach(([item, i]) => {
-      const opt = document.createElement("option");
-      opt.value = i;
-      opt.textContent = item.label;
-      grp.appendChild(opt);
+    const g = document.createElement("optgroup");
+    g.label = title;
+    items.forEach(([it, i]) => {
+      const o = document.createElement("option");
+      o.value = i;
+      o.textContent = it.label;
+      g.appendChild(o);
     });
-    sel.appendChild(grp);
+    sel.appendChild(g);
   });
-  const other = document.createElement("option");
-  other.value = "custom";
-  other.textContent = "Мого препарату тут немає — ввести вручну";
-  sel.appendChild(other);
-
-  $("concLegend").textContent = FORM_LABEL[state.form] + " — дозування на упаковці";
-  $("concVolWrap").style.display = state.form === "syrup" ? "" : "none";
-  $("concMgLabel").textContent =
-    state.form === "syrup" ? "мг" : state.form === "supp" ? "мг в одній свічці" : "мг в одній таблетці";
-  applyPreset();
+  if (state.presetIndex >= list.length) state.presetIndex = 0;
+  sel.value = String(state.presetIndex);
+  if (!sel.value) { state.presetIndex = Number(sel.options[0] ? sel.options[0].value : 0); sel.value = String(state.presetIndex); }
 }
 
-function applyPreset() {
-  const drug = DRUGS[state.drug];
-  const list = drug.forms[state.form];
-  const v = $("preset").value;
-  $("customRow").style.display = v === "custom" ? "" : "none";
-  if (v !== "custom") {
-    const item = list[Number(v)];
-    $("concMg").value = item.mg;
-    if (state.form === "syrup") $("concMl").value = item.ml;
-  }
-}
-$("preset").addEventListener("change", () => { applyPreset(); calculate(); });
+/* ── головний перерахунок ── */
+function render() {
+  const T = t();
+  const inp = input();
+  const w = inp.weightKg;
+  const notes = buildWarnings(inp, null);
+  const blocked = isBlocked(notes);
 
-/* ---------- вік ---------- */
-function ageInMonths() {
-  const v = parseFloat($("age").value);
-  if (!isFinite(v) || v < 0) return null;
-  return $("ageUnit").value === "years" ? v * 12 : v;
-}
+  const wValid = isFinite(w) && w >= 5 && w <= 40;
+  const wBad = isFinite(w) && (w < 5 || w > 40);
+  $("weightbox").className = "weightbox" + (wValid ? " ok" : wBad ? " bad" : "");
+  $("w-ok").hidden = !wValid;
+  const m = ageMonths();
+  const aValid = m !== null && m >= 3 && m < 216 && !(state.drug === "ibuprofen" && m < 6);
+  $("agefield").className = "agefield" + (aValid ? " ok" : "");
+  $("a-ok").hidden = !aValid;
 
-/* ---------- розрахунок ---------- */
-function calculate() {
+  /* червоні блоки: дані дитини окремо від препарату */
+  const childCodes = ["age_under_3m", "par_weight_below_4", "adult_ceiling"];
+  const child = notes.filter((n) => childCodes.indexOf(n.code) > -1);
+  const drugNotes = notes.filter((n) => childCodes.indexOf(n.code) === -1 && n.level !== "info");
+  fillAlert($("alert-child"), $("alert-child-body"), child);
+  fillAlert($("alert-drug"), $("alert-drug-body"), drugNotes);
+
   const res = $("result");
-  const warnBox = $("warnings");
-  warnBox.innerHTML = "";
-
-  const input = {
-    drug: state.drug,
-    form: state.form,
-    weightKg: parseFloat($("weight").value),
-    ageMonths: ageInMonths(),
-    concMg: parseFloat($("concMg").value),
-    concMl: state.form === "syrup" ? parseFloat($("concMl").value) : null
-  };
-
-  const gates = checkGates(input);
-  if (isBlocked(gates)) {
+  if (blocked) {
     res.className = "result blocked";
-    res.innerHTML =
-      '<p class="blocked-title">Дозу не показано</p>' +
-      '<p class="blocked-sub">У цьому віці або в цій формі препарат давати не можна. Причина — нижче.</p>';
-    renderNotes(gates, warnBox);
+    res.innerHTML = '<p class="kicker">' + T.blockedSub + '</p><div class="figure">' + T.blockedTitle + "</div>";
+    $("detail").hidden = true; $("howcard").hidden = true;
     return;
   }
-
-  const dose = computeDose(input);
-
+  const dose = computeDose(inp);
   if (!dose.ok) {
-    res.className = "result empty";
-    res.textContent =
-      dose.error === "weight" && $("weight").value
-        ? "Перевірте вагу: калькулятор працює в межах 2–120 кг."
-        : dose.error === "concentration"
-        ? "Вкажіть дозування з упаковки."
-        : "Введіть вагу — покажу разову дозу.";
+    res.className = "result";
+    res.innerHTML = '<p class="kicker">' + T.resultKicker + "</p><p style='margin:0;font-size:15px'>" + T.emptyResult + "</p>";
+    $("detail").hidden = true; $("howcard").hidden = true;
     return;
   }
 
-  const drug = DRUGS[state.drug];
-  const unitWord =
-    dose.unit === "ml"
-      ? "мл"
-      : dose.unit === "supp"
-      ? dose.amount === 1 ? "свічка" : "свічки"
-      : dose.unit === "sachet"
-      ? "саше"
-      : dose.unit === "chew"
-      ? dose.amount === 1 ? "капсула" : "капсули"
-      : dose.amount === 1 ? "таблетка" : "таб.";
-
-  const span = drug.perKg.max * input.weightKg * 1.4 - drug.perKg.min * input.weightKg * 0.6;
-  const pct = (v) => Math.max(0, Math.min(100, ((v - drug.perKg.min * input.weightKg * 0.6) / span) * 100));
-
-  res.className = "result";
+  const p = currentPreset();
+  const unit = dose.unit === "ml" ? T.units.ml : plural(T.units[dose.unit], dose.amount);
+  res.className = "result on";
   res.innerHTML =
-    '<div class="dose">' + nf(dose.amount, 2) + ' <small>' + unitWord + '</small></div>' +
-    '<p class="dose-mg">' + nf(dose.actualMg, 0) + ' мг на один прийом · ' + nf(dose.mgPerKg, 1) + ' мг/кг</p>' +
-    '<div class="ladder" aria-hidden="true">' +
-      '<div class="ladder-bar">' +
-        '<div class="ladder-safe" style="left:' + pct(dose.minMg) + '%;right:' + (100 - pct(dose.maxMg)) + '%"></div>' +
-        '<div class="ladder-mark" style="left:calc(' + pct(dose.actualMg) + '% - 2px)"></div>' +
-      '</div>' +
-      '<div class="ladder-scale"><span>' + nf(dose.minMg, 0) + ' мг</span><span>безпечний діапазон</span><span>' + nf(dose.maxMg, 0) + ' мг</span></div>' +
-    '</div>' +
-    '<dl class="facts">' +
-      '<div><dt>Не частіше ніж</dt><dd>' + drug.interval + '</dd></div>' +
-      '<div><dt>Прийомів за добу</dt><dd>до ' + dose.dosesPerDay + '</dd></div>' +
-      '<div><dt>Максимум за 24 години</dt><dd>' + nf(dose.dailyLimitMg, 0) + ' мг</dd></div>' +
-      '<div><dt>Препарат і форма</dt><dd>' + drug.label + ', ' + FORM_LABEL[state.form].toLowerCase() + '</dd></div>' +
-    '</dl>';
+    '<p class="kicker">' + T.resultKicker + " · " + T[state.drug] + " · " + nf(w) + " " + T.kg + "</p>" +
+    '<div class="figure">' + nf(dose.amount) + ' <span>' + unit + "</span></div>" +
+    '<p class="second">' + nf(dose.actualMg, 0) + " " + (state.lang === "uk" ? "мг" : "mg") + " · " + p.mg + (p.ml ? "/" + p.ml + " " + T.units.ml : "") + "</p>" +
+    '<button type="button" class="cta" id="logbtn">' + T.logDose + "</button>";
+  $("logbtn").addEventListener("click", () => logDose(dose, unit));
 
-  renderNotes(buildWarnings(input, dose), warnBox);
-}
-
-function renderNotes(notes, box) {
-  notes.forEach((w) => {
-    const el = document.createElement("div");
-    el.className = "note " + w.level;
-    el.innerHTML = w.text;
-    box.appendChild(el);
-  });
-}
-
-["weight", "age", "concMg", "concMl"].forEach((id) => $(id).addEventListener("input", calculate));
-$("ageUnit").addEventListener("change", calculate);
-
-$("reset").addEventListener("click", () => {
-  ["weight", "age", "concMg"].forEach((id) => ($(id).value = ""));
-  $("ageUnit").value = "years";
-  selectDrug("paracetamol");
-  $("result").className = "result empty";
-  $("result").textContent = "Введіть вагу — покажу разову дозу.";
-  $("warnings").innerHTML = "";
-  $("weight").focus();
-});
-
-/* ---------- наступний прийом ---------- */
-function nextDose() {
-  const box = $("altResult");
   const rows = [];
-  const now = new Date();
+  if (dose.unit === "ml") rows.push([T.rows.syringes, nf(dose.amount / 5)]);
+  else rows.push([T.rows.whole, nf(dose.amount, 0) + " " + unit]);
+  rows.push([T.rows.interval, T.intervalText[state.drug]]);
+  rows.push([T.rows.maxDoses, String(dose.dosesPerDay)]);
+  rows.push([T.rows.maxDaily, nf(dose.dailyLimitMg, 0) + " " + (state.lang === "uk" ? "мг" : "mg")]);
+  rows.push([T.rows.range, nf(dose.minMg, 0) + "–" + nf(dose.maxMg, 0) + " " + (state.lang === "uk" ? "мг" : "mg")]);
+  $("rows").innerHTML = rows.map((r) => "<div><dt>" + r[0] + "</dt><dd>" + r[1] + "</dd></div>").join("");
+  $("detail").hidden = false;
+  $("howcard").hidden = false;
+}
 
-  [["paracetamol", "lastP", "cntP"], ["ibuprofen", "lastI", "cntI"]].forEach(([id, timeId, cntId]) => {
-    const t = $(timeId).value;
-    if (!t) return;
+function fillAlert(box, body, notes) {
+  if (!notes.length) { box.hidden = true; return; }
+  box.hidden = false;
+  body.innerHTML = notes.map((n) => "<p>" + noteText(n, state.lang) + "</p>").join("");
+}
+
+/* ── журнал і таймери ── */
+function logDose(dose, unit) {
+  state.doses.unshift({
+    t: Date.now(), drug: state.drug, mg: Math.round(dose.actualMg),
+    text: nf(dose.amount) + " " + unit
+  });
+  state.doses = state.doses.slice(0, 30);
+  save();
+  switchTab("next");
+  renderNext();
+}
+
+function lastDose(drug) {
+  const found = state.doses.find((d) => d.drug === drug);
+  return found ? new Date(found.t) : null;
+}
+function todayDoses(drug) {
+  const since = Date.now() - 24 * 3600000;
+  return state.doses.filter((d) => d.drug === drug && d.t >= since);
+}
+
+function renderNext() {
+  const T = t();
+  const now = new Date();
+  ["paracetamol", "ibuprofen"].forEach((id) => {
     const drug = DRUGS[id];
-    const [h, m] = t.split(":").map(Number);
-    const last = new Date(now);
-    last.setHours(h, m, 0, 0);
-    if (last > now) last.setDate(last.getDate() - 1);
-    const info = nextDoseTime(id, last, parseInt($(cntId).value, 10), now);
-    const hh = String(info.at.getHours()).padStart(2, "0") + ":" + String(info.at.getMinutes()).padStart(2, "0");
-    rows.push(
-      '<div><dt>' + drug.label + '</dt><dd>' +
-      (info.limitReached ? "ліміт доби вичерпано" : info.ready ? "можна вже (з " + hh + ")" : "не раніше " + hh) +
-      '</dd></div>' +
-      '<div><dt>Залишилось доз до кінця доби</dt><dd>' + info.dosesLeft + " з " + drug.maxDoses + '</dd></div>'
-    );
+    const other = id === "paracetamol" ? "ibuprofen" : "paracetamol";
+    const mine = todayDoses(id);
+    const info = nextDoseTime(id, lastDose(id), mine.length, now, lastDose(other));
+    const mg = mine.reduce((s, d) => s + d.mg, 0);
+    const w = weightNum();
+    const maxMg = isFinite(w) ? Math.min(drug.dailyPerKg * w, drug.maxDailyMg) : drug.maxDailyMg;
+    const pct = Math.min(100, Math.round((mg / maxMg) * 100));
+
+    let fig = T.now;
+    if (!info.ready) {
+      const mins = Math.ceil(info.waitMs / 60000);
+      const h = Math.floor(mins / 60), mm = mins % 60;
+      fig = state.lang === "uk"
+        ? (h ? h + " год " : "") + mm + " хв"
+        : (h ? h + "h " : "") + mm + "min";
+    }
+    let note;
+    const last = lastDose(id);
+    if (info.reason === "cross") note = T.crossAt(T[other], hhmm(info.at));
+    else if (info.reason === "same") note = T.nextAt(hhmm(last), hhmm(info.at));
+    else note = last ? T.lastAt(hhmm(last)) : T.noneYet;
+
+    $("timer-" + id).innerHTML =
+      '<div class="timerhead"><b>' + T[id] + "</b>" +
+      '<span class="status' + (info.ready && !info.limitReached ? " go" : "") + '">' +
+      (info.ready && !info.limitReached ? T.ready : T.waiting) + "</span></div>" +
+      '<div class="timerfig">' + fig + "</div>" +
+      '<p class="timernote">' + note + "</p>" +
+      '<div class="bar' + (pct > 85 ? " hot" : "") + '"><i style="width:' + pct + '%"></i></div>' +
+      '<p class="barcap">' + T.perDay(mine.length, drug.maxDoses, nf(mg, 0), nf(maxMg, 0)) + "</p>";
   });
 
-  if (!rows.length) {
-    box.className = "result empty";
-    box.textContent = "Вкажіть час останньої дози — порахую, коли можна наступну.";
+  const body = $("logbody");
+  if (!state.doses.length) {
+    body.innerHTML = '<p class="note-sm" style="margin:0">' + T.logEmpty + "</p>";
+    $("undo").hidden = true;
     return;
   }
-  box.className = "result";
-  box.innerHTML = '<dl class="facts">' + rows.join("") + "</dl>";
+  $("undo").hidden = false;
+  body.innerHTML = state.doses.map((d) =>
+    '<div class="logrow"><b>' + hhmm(d.t) + "</b><span>" + T[d.drug] + "</span><span>" + d.text + "</span></div>"
+  ).join("");
 }
-["lastP", "lastI", "cntP", "cntI"].forEach((id) => $(id).addEventListener("input", nextDose));
 
-/* ---------- список заборонених ---------- */
-(function renderForbidden() {
-  const table = $("forbidden");
-  if (!table) return;
-  table.innerHTML = "<tr><th>Препарат</th><th>Заборона</th><th>Чому</th></tr>" +
-    FORBIDDEN.map((f) =>
-      "<tr><td>" + f.name + "</td><td>" + f.rule + "</td><td>" + f.why + "</td></tr>"
-    ).join("");
-})();
+/* ── вкладки ── */
+function switchTab(tab) {
+  state.tab = tab;
+  [["dose", "view-dose"], ["next", "view-next"], ["src", "view-src"]].forEach(([k, v]) => {
+    $("tab-" + k).setAttribute("aria-selected", String(k === tab));
+    $(v).hidden = k !== tab;
+  });
+  if (tab === "next") renderNext();
+}
 
-(function renderCombined() {
-  const table = $("combined");
-  if (!table) return;
-  table.innerHTML = "<tr><th>Препарат</th><th>Що всередині</th><th>Вік</th></tr>" +
-    COMBINED.map((c) =>
-      "<tr><td>" + c.name + "</td><td>" + c.what + "</td><td>" + c.rule + "</td></tr>"
-    ).join("");
-})();
+/* ── події ── */
+$("weight").addEventListener("input", (e) => { state.weight = e.target.value; save(); render(); });
+$("age").addEventListener("input", (e) => { state.age = e.target.value; save(); render(); });
+$("ageUnit").addEventListener("change", (e) => { state.ageUnit = e.target.value; save(); render(); });
+$("preset").addEventListener("change", (e) => { state.presetIndex = Number(e.target.value); save(); render(); });
 
-/* ---------- старт ---------- */
-buildPresets();
+["paracetamol", "ibuprofen"].forEach((id) => {
+  $("d-" + id).addEventListener("click", () => {
+    state.drug = id;
+    $("d-paracetamol").setAttribute("aria-pressed", String(id === "paracetamol"));
+    $("d-ibuprofen").setAttribute("aria-pressed", String(id === "ibuprofen"));
+    state.presetIndex = 0;
+    paintChips(); paintPresets(); save(); render();
+  });
+});
+$("chips").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-form]");
+  if (!b) return;
+  state.form = b.dataset.form;
+  state.presetIndex = 0;
+  paintChips(); paintPresets(); save(); render();
+});
+$("clear").addEventListener("click", () => {
+  state.weight = ""; state.age = ""; state.presetIndex = 0;
+  $("weight").value = ""; $("age").value = "";
+  paintPresets(); save(); render(); $("weight").focus();
+});
+$("undo").addEventListener("click", () => { state.doses.shift(); save(); renderNext(); });
+
+[["dose", "tab-dose"], ["next", "tab-next"], ["src", "tab-src"]].forEach(([k, id]) =>
+  $(id).addEventListener("click", () => switchTab(k)));
+
+["uk", "en"].forEach((lang) => $("lang-" + lang).addEventListener("click", () => {
+  state.lang = lang; save(); paintChrome(); paintChips(); paintPresets(); render();
+  if (state.tab === "next") renderNext();
+}));
+$("theme").addEventListener("click", () => {
+  state.theme = state.theme === "dark" ? "light" : "dark";
+  applyTheme(); save();
+});
+function applyTheme() {
+  const dark = state.theme === "dark";
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  $("theme").setAttribute("aria-pressed", String(dark));
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = dark ? "#181716" : "#f3f2f2";
+}
+
+/* ── старт ── */
+load();
+if (!DRUGS[state.drug]) state.drug = "paracetamol";
+$("weight").value = state.weight;
+$("age").value = state.age;
+$("ageUnit").value = state.ageUnit;
+$("d-paracetamol").setAttribute("aria-pressed", String(state.drug === "paracetamol"));
+$("d-ibuprofen").setAttribute("aria-pressed", String(state.drug === "ibuprofen"));
+applyTheme();
+paintChrome();
+paintChips();
+paintPresets();
+render();
+setInterval(() => { if (state.tab === "next") renderNext(); }, 1000);
+
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 }

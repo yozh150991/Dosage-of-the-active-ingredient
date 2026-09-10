@@ -60,8 +60,8 @@ test("довідник препаратів заповнений коректн�
   }
 });
 
-test("у довіднику 41 пресет — регресія на випадкове видалення", () => {
-  assert.equal(PRESETS.length, 41);
+test("у довіднику 42 пресети — регресія на випадкове видалення", () => {
+  assert.equal(PRESETS.length, 42);
 });
 
 /* ─────────────── еталонні розрахунки ─────────────── */
@@ -259,7 +259,7 @@ test("протипоказання ібупрофену показуються �
 test("наступна доза парацетамолу — через 6 годин", () => {
   const now = new Date("2026-09-09T12:00:00");
   const last = new Date("2026-09-09T09:00:00");
-  const r = nextDoseTime("paracetamol", last, 1, now);
+  const r = nextDoseTime("paracetamol", last, 1, now, null);
   assert.equal(r.at.getHours(), 15);
   assert.equal(r.ready, false);
   assert.equal(r.dosesLeft, 3);
@@ -268,7 +268,7 @@ test("наступна доза парацетамолу — через 6 год
 
 test("ібупрофен має інтервал 8 годин і 3 дози на добу", () => {
   const now = new Date("2026-09-09T20:00:00");
-  const r = nextDoseTime("ibuprofen", new Date("2026-09-09T11:00:00"), 3, now);
+  const r = nextDoseTime("ibuprofen", new Date("2026-09-09T11:00:00"), 3, now, null);
   assert.equal(r.at.getHours(), 19);
   assert.equal(r.ready, true);
   assert.equal(r.dosesLeft, 0);
@@ -277,9 +277,34 @@ test("ібупрофен має інтервал 8 годин і 3 дози на
 
 test("порожній або зіпсований час не ламає розрахунок", () => {
   const now = new Date("2026-09-09T12:00:00");
-  assert.equal(nextDoseTime("paracetamol", null, 0, now), null);
-  assert.equal(nextDoseTime("paracetamol", new Date("не час"), 0, now), null);
-  assert.equal(nextDoseTime("невідомий", new Date(), 0, now), null);
+  assert.equal(nextDoseTime("невідомий", new Date(), 0, now, null), null);
+  const noDoses = nextDoseTime("paracetamol", null, 0, now, null);
+  assert.equal(noDoses.ready, true, "нічого не давали — можна одразу");
+  assert.equal(noDoses.reason, "none");
+  assert.equal(nextDoseTime("paracetamol", new Date("не час"), 0, now, null).ready, true);
+});
+
+test("крос-правило: інший препарат не раніше ніж через 3 години", () => {
+  const now = new Date("2026-09-09T15:00:00");
+  const r = nextDoseTime("ibuprofen", null, 0, now, new Date("2026-09-09T14:20:00"));
+  assert.equal(r.ready, false, "парацетамол дали 40 хвилин тому");
+  assert.equal(r.reason, "cross");
+  assert.equal(r.at.getHours(), 17);
+  assert.equal(r.at.getMinutes(), 20);
+});
+
+test("крос-правило не скорочує власний інтервал препарату", () => {
+  const now = new Date("2026-09-09T15:00:00");
+  const r = nextDoseTime("paracetamol", new Date("2026-09-09T14:00:00"), 1, now, new Date("2026-09-09T09:00:00"));
+  assert.equal(r.reason, "same", "власні 6 годин довші за 3 години крос-правила");
+  assert.equal(r.at.getHours(), 20);
+});
+
+test("причина очікування розрізняє власний інтервал і чужий препарат", () => {
+  const now = new Date("2026-09-09T15:00:00");
+  const cross = nextDoseTime("ibuprofen", null, 0, now, new Date("2026-09-09T14:00:00"));
+  assert.equal(cross.reason, "cross", "інакше інтерфейс скаже «зачекайте» і «ще не давали» водночас");
+  assert.ok(cross.waitMs > 0);
 });
 
 test("неподільні форми не множаться понад межу інструкції", () => {
@@ -506,4 +531,93 @@ test("кожна неподільна форма має власну межу к
   assert.equal(MAX_UNITS.supp, 2);
   assert.equal(MAX_UNITS.sachet, 2);
   assert.ok(MAX_UNITS.chew >= 3, "інструкція допускає 3 капсули на прийом");
+});
+
+/* ─────────────── тексти ─────────────── */
+
+const I18N = require("../i18n.js");
+
+test("кожен код попередження має текст обома мовами", () => {
+  const codes = new Set();
+  for (const p of PRESETS) {
+    for (const weightKg of [3, 5, 9, 15, 25, 45]) {
+      for (const ageMonths of [null, 2, 4, 10, 36, 60, 96, 156]) {
+        const inp = Object.assign({ weightKg, ageMonths }, p);
+        buildWarnings(inp, computeDose(inp)).forEach((n) => codes.add(n.code));
+      }
+    }
+  }
+  assert.ok(codes.size > 15, "сітка має покривати більшість кодів, знайдено " + codes.size);
+  for (const code of codes) {
+    assert.ok(I18N.NOTES[code], "немає тексту для коду " + code);
+    assert.ok(I18N.NOTES[code].uk && I18N.NOTES[code].en, code + ": бракує однієї з мов");
+  }
+});
+
+test("підстановки в текстах справді підставляються", () => {
+  const note = { level: "block", code: "tab_age", vars: { mg: 500, years: 6 } };
+  const uk = I18N.noteText(note, "uk");
+  const en = I18N.noteText(note, "en");
+  assert.match(uk, /500/);
+  assert.match(uk, /6/);
+  assert.match(en, /500/);
+  assert.ok(uk !== en, "мови мають відрізнятися");
+  assert.ok(!uk.includes("undefined") && !en.includes("undefined"));
+});
+
+test("немає осиротілих текстів і немає кодів без тексту", () => {
+  const src = require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "calc-core.js"), "utf8");
+  const used = new Set();
+  const re = /push\(\s*"(?:block|danger|warn|info)"\s*,\s*"([a-z0-9_]+)"/g;
+  let m;
+  while ((m = re.exec(src))) used.add(m[1]);
+
+  const written = new Set(Object.keys(I18N.NOTES));
+  const orphans = [...written].filter((c) => !used.has(c));
+  const missing = [...used].filter((c) => !written.has(c));
+  assert.deepEqual(orphans, [], "тексти без відповідного коду в ядрі");
+  assert.deepEqual(missing, [], "коди в ядрі без тексту");
+});
+
+test("інтерфейс перекладено повністю — обидві мови мають однакові ключі", () => {
+  const keys = (o, prefix = "") => Object.keys(o).flatMap((k) => {
+    const v = o[k];
+    return v && typeof v === "object" && !Array.isArray(v) && typeof v !== "function"
+      ? keys(v, prefix + k + ".")
+      : [prefix + k];
+  });
+  assert.deepEqual(keys(I18N.UI.uk).sort(), keys(I18N.UI.en).sort());
+});
+
+test("сторінка не тягне шрифти ззовні", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+  assert.ok(!/fonts\.googleapis|fonts\.gstatic/.test(html), "лишилося посилання на Google Fonts — офлайн зламається");
+  assert.match(html, /@font-face/, "шрифти мають бути підключені локально");
+
+  const needed = [
+    "archivo-latin-wght-normal.woff2",
+    "archivo-latin-ext-wght-normal.woff2",
+    "manrope-cyrillic-wght-normal.woff2",
+    "manrope-cyrillic-ext-wght-normal.woff2"
+  ];
+  const sw = fs.readFileSync(path.join(__dirname, "..", "sw.js"), "utf8");
+  for (const f of needed) {
+    assert.ok(fs.existsSync(path.join(__dirname, "..", "fonts", f)), "немає файлу шрифту " + f);
+    assert.ok(html.includes(f), "шрифт " + f + " не підключений у CSS");
+    assert.ok(sw.includes(f), "шрифт " + f + " не кешується service worker'ом");
+  }
+});
+
+test("кирилицю покриває шрифт, у якому вона є", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+  /* саме @font-face, а не тег preload вище — той теж містить це ім'я файлу */
+  const cyrBlock = html.slice(html.indexOf("src:url(fonts/manrope-cyrillic-wght-normal.woff2)"));
+  const range = cyrBlock.slice(0, 400).match(/unicode-range:([^;]+);/);
+  assert.ok(range, "у кириличного @font-face немає unicode-range");
+  assert.match(range[1], /U\+0400-045F/, "діапазон має покривати основну кирилицю");
+  assert.ok(range[1].includes("U+0490-0491"), "українські Ґ і ґ мають бути в діапазоні");
 });

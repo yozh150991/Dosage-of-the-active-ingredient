@@ -1,6 +1,6 @@
 {
   "name": "doza-dytyni",
-  "version": "0.8.0",
+  "version": "1.1.0",
   "description": "Калькулятор дози жарознижувального за вагою дитини",
   "private": true,
   "scripts": {

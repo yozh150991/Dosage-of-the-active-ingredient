@@ -10,6 +10,7 @@ const path = require("node:path");
 const root = __dirname;
 const template = fs.readFileSync(path.join(root, "src/index.html"), "utf8");
 const core = fs.readFileSync(path.join(root, "calc-core.js"), "utf8");
+const i18n = fs.readFileSync(path.join(root, "i18n.js"), "utf8");
 
 if (!template.includes("<!--CORE-->")) {
   console.error("У src/index.html немає маркера <!--CORE-->. Збірка неможлива.");
@@ -18,9 +19,11 @@ if (!template.includes("<!--CORE-->")) {
 
 const banner =
   "<!-- Згенеровано npm run build. Не редагуйте цей файл руками:\n" +
-  "     розмітка живе в src/index.html, розрахунок — у calc-core.js. -->\n";
+  "     розмітка живе в src/index.html, розрахунок — у calc-core.js, тексти — в i18n.js. -->\n";
 
-const inlined = "<script>\n" + core.trimEnd() + "\n</script>";
+const inlined =
+  "<script>\n" + core.trimEnd() + "\n</script>\n" +
+  "<script>\n" + i18n.trimEnd() + "\n</script>";
 const out = banner + template.replace("<!--CORE-->", inlined);
 
 fs.writeFileSync(path.join(root, "index.html"), out);

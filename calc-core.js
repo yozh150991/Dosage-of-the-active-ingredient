@@ -33,6 +33,7 @@ const DRUGS = {
         { mg: 200, ml: 5, group: "eu", label: "200 мг / 5 мл — ben-u-ron Saft, Mexalen (DE, AT)" }
       ],
       supp: [
+        { mg: 50, group: "ua", label: "50 мг — Парацетамол супозиторії" },
         { mg: 80, group: "ua", label: "80 мг — Ефералган, Парацетамол Монфарм" },
         { mg: 100, group: "ua", label: "100 мг — Парацетамол супозиторії" },
         { mg: 150, group: "ua", label: "150 мг — Ефералган" },
@@ -132,6 +133,7 @@ const LIMITS = {
     concSchoolAgeMgPerMl: 50,     // 250 мг/5 мл — форма для дітей від 6 років
     /* номінал свічки → допустима вага, кг */
     supp: {
+      50:  { min: 3,  max: 6 },
       75:  { min: 3,  max: 5 },
       80:  { min: 5,  max: 10 },
       100: { min: 6,  max: 12 },
@@ -266,10 +268,11 @@ function computeDose(input) {
 
 /* Гейти допуску: чи можна цьому препарату в цій формі бути в руках цієї дитини.
    Залежать тільки від вводу, не від арифметики дози — тому викликаються ДО неї.
-   level "block" означає, що доза не показується взагалі. */
+   level "block" означає, що доза не показується взагалі.
+   Тексти живуть в i18n.js — тут лише коди й підстановки. */
 function checkGates(input) {
   const out = [];
-  const push = (level, code, text) => out.push({ level: level, code: code, text: text });
+  const push = (level, code, vars) => out.push({ level: level, code: code, vars: vars || {} });
 
   const drugId = input.drug;
   const drug = DRUGS[drugId];
@@ -288,42 +291,35 @@ function checkGates(input) {
 
   /* 1. Гарячка в перші три місяці — це завжди лікар */
   if (knownAge && months < LIMITS.doctorOnlyAgeMonths) {
-    push("block", "age_under_3m",
-      "<strong>Дитині менше 3 місяців.</strong> Гарячка в цьому віці — привід звернутися по медичну допомогу сьогодні, а не давати жарознижувальне вдома. Дозу для немовляти (зокрема ректальні форми від 3 кг) призначає лікар.");
+    push("block", "age_under_3m");
     return out;
   }
 
   /* 2. Ібупрофен: нижня межа і зона обережності */
   if (drugId === "ibuprofen") {
-    if (knownAge && months < lim.minAgeMonths) {
-      push("block", "ibu_under_3m",
-        "Ібупрофен не застосовують у дітей до 3 місяців. У цьому віці препаратом вибору є парацетамол, і призначає його лікар.");
-    } else if (knownAge && months < lim.cautionAgeMonths) {
-      push("warn", "ibu_under_6m",
-        "Європейські інструкції дозволяють ібупрофен з 3 місяців, американські (AAP, FDA) — лише з 6. Якщо симптоми тримаються довше <strong>24 годин</strong> або після трьох доз — до лікаря негайно.");
+    /* Окремої гілки "ібупрофен до 3 місяців" тут немає навмисно:
+       гейт doctorOnlyAgeMonths вище блокує цей вік для обох препаратів
+       і одразу виходить. Тест на осиротілі коди колись це вже спіймав. */
+    if (knownAge && months < lim.cautionAgeMonths) {
+      push("warn", "ibu_under_6m");
     }
     if (knownWeight && weight < lim.minWeightKg) {
-      push("block", "ibu_weight_below_5",
-        "Ібупрофен не застосовують при масі тіла менше 5 кг.");
+      push("block", "ibu_weight_below_5", { kg: lim.minWeightKg });
     } else if (form === "supp" && knownWeight && weight < lim.suppMinWeightKg) {
-      push("block", "ibu_supp_weight_below_6",
-        "Супозиторії ібупрофену протипоказані при масі менше 6 кг. Оберіть суспензію або парацетамол.");
+      push("block", "ibu_supp_weight_below_6", { kg: lim.suppMinWeightKg });
     }
     if (form === "syrup" && isFinite(conc) && isFinite(concMl) && conc / concMl >= CONC_FORTE) {
       if (knownAge && months < lim.forteMinAgeMonths) {
-        push("warn", "ibu_forte_age",
-          "Українська інструкція на форму 200 мг/5 мл — від 6 місяців і 8 кг, польська на ту саму концентрацію — від 3 місяців. Розбіжність реальна: якщо є звичайна суспензія 100 мг/5 мл, у цьому віці візьміть її.");
+        push("warn", "ibu_forte_age");
       } else if (knownWeight && weight < lim.forteMinWeightKg) {
-        push("warn", "ibu_forte_weight",
-          "Форма 200 мг/5 мл розрахована на масу від 8 кг. Для меншої дитини точніше відміряти звичайну суспензію 100 мг/5 мл.");
+        push("warn", "ibu_forte_weight", { kg: lim.forteMinWeightKg });
       }
     }
   }
 
   /* 3. Парацетамол: нижня межа за масою */
   if (drugId === "paracetamol" && knownWeight && weight < lim.minWeightKg) {
-    push("block", "par_weight_below_4",
-      "Маса менше 4 кг — доза розраховується за призначенням лікаря, з поправкою на вік від зачаття.");
+    push("block", "par_weight_below_4", { kg: lim.minWeightKg });
   }
 
   /* 4. Тверді таблетки: аспірація важливіша за арифметику */
@@ -331,35 +327,28 @@ function checkGates(input) {
     const tabRule = (lim.tab && lim.tab[conc]) || null;
     const minAge = tabRule ? tabRule.minAgeMonths : LIMITS.paracetamol.tabMinAgeMonths;
     if (knownAge && months < minAge) {
-      push("block", "tab_age",
-        "Таблетку " + conc + " мг не дають дітям до " + Math.round(minAge / 12) + " років: ризик поперхнутися, а поділена таблетка дозується неточно. Оберіть суспензію або свічки.");
+      push("block", "tab_age", { mg: conc, years: Math.round(minAge / 12) });
     } else if (!knownAge) {
-      push("warn", "tab_age_unknown",
-        "Вкажіть вік: тверді таблетки не дають дітям до 6 років, а номінали 200 і 400 мг мають власні вікові межі.");
+      push("warn", "tab_age_unknown");
     }
     if (drugId === "paracetamol" && conc >= 500 && knownAge &&
         months >= LIMITS.paracetamol.tabMinAgeMonths &&
         months < LIMITS.paracetamol.tab500PlMinAgeMonths) {
-      push("warn", "par_tab_500_age",
-        "Польський Apap 500 мг — від 12 років, українська інструкція на парацетамол 500 мг дозволяє з 6 років по половині таблетки. Якщо є сироп або свічки, у цьому віці вони точніші за поділену таблетку.");
+      push("warn", "par_tab_500_age");
     }
     if (tabRule && knownWeight && weight < tabRule.minWeightKg) {
-      push("block", "tab_weight",
-        "Таблетка " + conc + " мг розрахована на масу від " + tabRule.minWeightKg + " кг.");
+      push("block", "tab_weight", { mg: conc, kg: tabRule.minWeightKg });
     }
   }
 
-  /* 4а. Саше з гранулами: ковтати не треба, тому поріг нижчий за таблетки,
-     але номінал усе одно фіксований і має власний вік за інструкцією */
+  /* 4а. Саше з гранулами: ковтати не треба, тому поріг нижчий за таблетки */
   if (form === "sachet" && isFinite(conc)) {
     const rule = lim.sachet && lim.sachet[conc];
     const minAge = rule ? rule.minAgeMonths : 48;
     if (knownAge && months < minAge) {
-      push("block", "sachet_age",
-        "Саше " + conc + " мг за інструкцією призначене дітям від " + Math.round(minAge / 12) + " років. Доза в ньому фіксована й не ділиться — для меншої дитини потрібна рідка форма або свічки.");
+      push("block", "sachet_age", { mg: conc, years: Math.round(minAge / 12) });
     } else if (!knownAge) {
-      push("warn", "sachet_age_unknown",
-        "Вкажіть вік: саше має фіксовану дозу й власну вікову межу (250 мг — від 4 років, 500 мг — від 11).");
+      push("warn", "sachet_age_unknown");
     }
   }
 
@@ -368,15 +357,12 @@ function checkGates(input) {
     const rule = lim.chew && lim.chew[conc];
     if (rule) {
       if (knownAge && months < rule.minAgeMonths) {
-        push("block", "chew_age",
-          "Жувальні капсули " + conc + " мг призначені дітям від " + Math.round(rule.minAgeMonths / 12) + " років. Молодшій дитині потрібна суспензія.");
+        push("block", "chew_age", { mg: conc, years: Math.round(rule.minAgeMonths / 12) });
       }
       if (knownWeight && weight < rule.minWeightKg) {
-        push("block", "chew_weight",
-          "Жувальні капсули розраховані на масу від " + rule.minWeightKg + " кг.");
+        push("block", "chew_weight", { kg: rule.minWeightKg });
       } else if (rule.maxWeightKg && knownWeight && weight > rule.maxWeightKg) {
-        push("warn", "chew_weight_high",
-          "Ця форма розрахована на масу до " + rule.maxWeightKg + " кг. Для більшої дитини діють дорослі дозування.");
+        push("warn", "chew_weight_high", { kg: rule.maxWeightKg });
       }
     }
   }
@@ -386,11 +372,9 @@ function checkGates(input) {
     const range = lim.supp && lim.supp[conc];
     if (range) {
       if (weight < range.min) {
-        push("warn", "supp_nominal_low",
-          "Свічка " + conc + " мг за інструкцією призначена для маси від " + range.min + " кг. Для " + weight + " кг візьміть менший номінал.");
+        push("warn", "supp_nominal_low", { mg: conc, kg: range.min, weight: weight });
       } else if (range.max && weight > range.max) {
-        push("warn", "supp_nominal_high",
-          "Свічка " + conc + " мг розрахована на масу до " + range.max + " кг. Для більшої дитини зручніший інший номінал або рідка форма.");
+        push("warn", "supp_nominal_high", { mg: conc, kg: range.max });
       }
     }
   }
@@ -398,14 +382,12 @@ function checkGates(input) {
   /* 6. Концентрований сироп парацетамолу — форма для школярів */
   if (drugId === "paracetamol" && form === "syrup" && isFinite(conc) && isFinite(concMl) &&
       conc / concMl >= lim.concSchoolAgeMgPerMl && knownAge && months < lim.tabMinAgeMonths) {
-    push("warn", "conc_school_age",
-      "Концентрація 250 мг/5 мл — це форма для дітей від 6 років. Доза порахована правильно, але для меншої дитини точніше відміряти сироп 120 або 150 мг/5 мл.");
+    push("warn", "conc_school_age");
   }
 
   /* 7. Вік не вказано — вікові перевірки не виконані */
-  if (!knownAge && form !== "tab") {
-    push("info", "age_unknown",
-      "Вік не вказано, тому вікові обмеження не перевірені. Доза рахується тільки за вагою.");
+  if (!knownAge && form !== "tab" && form !== "sachet") {
+    push("info", "age_unknown");
   }
 
   return out;
@@ -420,66 +402,72 @@ function buildWarnings(input, dose) {
   const weight = Number(input.weightKg);
   const flags = (dose && dose.flags) || [];
   const out = checkGates(input);
-  const push = (level, code, text) => out.push({ level: level, code: code, text: text });
+  const push = (level, code, vars) => out.push({ level: level, code: code, vars: vars || {} });
 
   /* Якщо препарат у цьому віці чи формі взагалі не можна — далі не міркуємо */
   if (isBlocked(out)) return out;
 
-  if (flags.indexOf("supp_too_large") > -1) {
-    push("danger", "supp_too_large", "Свічка " + input.concMg + " мг завелика для ваги " + weight + " кг. Візьміть меншу — свічки не можна різати, діюча речовина в них розподілена нерівномірно.");
-  }
-  if (flags.indexOf("supp_below_min") > -1) {
-    push("warn", "supp_below_min", "Ця свічка дає менше за мінімальну ефективну дозу. Ефект може бути слабким — підберіть свічку більшого номіналу.");
-  }
-  if (flags.indexOf("sachet_too_large") > -1) {
-    push("danger", "sachet_too_large", "Саше " + input.concMg + " мг завелике для ваги " + weight + " кг. Гранули не діляться — потрібна рідка форма.");
-  }
-  if (flags.indexOf("sachet_below_min") > -1) {
-    push("warn", "sachet_below_min", "Це саше дає менше за мінімальну ефективну дозу для такої ваги.");
-  }
-  if (flags.indexOf("chew_too_large") > -1) {
-    push("danger", "chew_too_large", "Навіть одна капсула " + input.concMg + " мг перевищує дозу для цієї ваги.");
-  }
-  if (flags.indexOf("chew_below_min") > -1) {
-    push("warn", "chew_below_min", "Стільки капсул дає менше за мінімальну ефективну дозу.");
-  }
-  if (flags.indexOf("tab_too_large") > -1) {
-    push("danger", "tab_too_large", "Навіть половина таблетки " + input.concMg + " мг перевищує дозу для цієї ваги. Потрібна рідка форма або свічки.");
-  }
-  if (flags.indexOf("volume_large") > -1) {
-    push("warn", "volume_large", "Об'єм понад 20 мл — перевірте, чи правильно вказана концентрація на упаковці.");
-  }
-  if (flags.indexOf("conc_drops") > -1) {
-    push("warn", "conc_drops", "<strong>" + Math.round(input.concMg / input.concMl) + " мг в одному мілілітрі — це краплі, а не сироп.</strong> Концентрація вчетверо вища за звичайну суспензію. Ще раз звірте цифру на флаконі.");
-  }
-  if (flags.indexOf("conc_forte") > -1) {
-    push("warn", "conc_forte", "Це посилена форма («форте»). Вона вдвічі концентрованіша за звичайну — переконайтеся, що у вас у руках саме той флакон.");
-  }
+  const has = (f) => flags.indexOf(f) > -1;
 
-  if (input.drug === "ibuprofen") {
-    push("info", "ibu_contraindications", "Ібупрофен не дають при зневодненні, багаторазовому блюванні чи проносі, вітряній віспі, хворобах нирок і при астмі з непереносимістю НПЗЗ. Давати після їжі.");
-  }
+  if (has("supp_too_large")) push("danger", "supp_too_large", { mg: input.concMg, weight: weight });
+  if (has("supp_below_min")) push("warn", "supp_below_min");
+  if (has("sachet_too_large")) push("danger", "sachet_too_large", { mg: input.concMg, weight: weight });
+  if (has("sachet_below_min")) push("warn", "sachet_below_min");
+  if (has("chew_too_large")) push("danger", "chew_too_large", { mg: input.concMg });
+  if (has("chew_below_min")) push("warn", "chew_below_min");
+  if (has("tab_too_large")) push("danger", "tab_too_large", { mg: input.concMg });
+  if (has("volume_large")) push("warn", "volume_large");
+  if (has("conc_drops")) push("warn", "conc_drops", { mgPerMl: Math.round(input.concMg / input.concMl) });
+  if (has("conc_forte")) push("warn", "conc_forte");
+
+  if (input.drug === "ibuprofen") push("info", "ibu_contraindications");
 
   if (isFinite(weight) && weight > 40) {
-    push("info", "adult_ceiling", "За такої ваги діють дорослі стелі: разова доза не більша за " + drug.maxSingleMg + " мг, добова — за " + drug.maxDailyMg + " мг.");
+    push("info", "adult_ceiling", { single: drug.maxSingleMg, daily: drug.maxDailyMg });
   }
 
-  push("info", "duration_limit", "Без огляду лікаря жарознижувальне дають не довше <strong>3 днів</strong> поспіль. Для дитини 3–6 місяців межа інша: якщо температура тримається понад <strong>24 години</strong>, до лікаря треба звернутися одразу.");
-
-  push("info", "hidden_paracetamol", "Перевірте, чи немає парацетамолу або ібупрофену в інших ліках, які дитина вже приймає — комбіновані порошки від застуди часто їх містять. Два жарознижувальні одночасно не дають.");
+  push("info", "duration_limit");
+  push("info", "hidden_paracetamol");
 
   return out;
 }
 
-/* Найраніший час наступної дози. now і lastTaken — Date. */
-function nextDoseTime(drugId, lastTaken, dosesTaken, now) {
+/* Мінімальний проміжок між РІЗНИМИ препаратами при чергуванні, годин */
+const CROSS_INTERVAL_HOURS = 3;
+
+/* Найраніший час наступної дози.
+   lastTaken — остання доза цього ж препарату, lastOther — іншого.
+   Повертає ще й причину очікування: те саме ліки чи крос-правило. */
+function nextDoseTime(drugId, lastTaken, dosesTaken, now, lastOther) {
   const drug = DRUGS[drugId];
-  if (!drug || !(lastTaken instanceof Date) || isNaN(lastTaken)) return null;
+  if (!drug) return null;
   const taken = Math.max(0, Number(dosesTaken) || 0);
-  const next = new Date(lastTaken.getTime() + drug.intervalHours * 3600000);
+  const valid = (d) => d instanceof Date && !isNaN(d);
+
+  let at = null;
+  let reason = "none";
+  if (valid(lastTaken)) {
+    at = new Date(lastTaken.getTime() + drug.intervalHours * 3600000);
+    reason = "same";
+  }
+  if (valid(lastOther)) {
+    const cross = new Date(lastOther.getTime() + CROSS_INTERVAL_HOURS * 3600000);
+    if (!at || cross > at) {
+      at = cross;
+      reason = "cross";
+    }
+  }
+  if (!at) {
+    return { at: null, ready: true, reason: "none", waitMs: 0,
+             dosesLeft: Math.max(0, drug.maxDoses - taken),
+             limitReached: drug.maxDoses - taken <= 0 };
+  }
+  const ready = at <= now;
   return {
-    at: next,
-    ready: next <= now,
+    at: at,
+    ready: ready,
+    reason: ready ? "none" : reason,
+    waitMs: ready ? 0 : at - now,
     dosesLeft: Math.max(0, drug.maxDoses - taken),
     limitReached: drug.maxDoses - taken <= 0
   };
@@ -496,6 +484,7 @@ return {
   FORM_LABEL: FORM_LABEL,
   CONC_FORTE: CONC_FORTE,
   CONC_DROPS: CONC_DROPS,
+  CROSS_INTERVAL_HOURS: CROSS_INTERVAL_HOURS,
   MAX_SUPPOSITORIES: MAX_SUPPOSITORIES,
   MAX_UNITS: MAX_UNITS,
   computeDose: computeDose,

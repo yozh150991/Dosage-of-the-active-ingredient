@@ -1,10 +1,14 @@
 /* Кеш офлайн-оболонки. Версію змінюйте при кожному релізі — інакше
    у батьків залишиться стара логіка розрахунку. */
-const CACHE = "doza-v0.8.0";
+const CACHE = "doza-v1.1.0";
 const ASSETS = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
+  "./fonts/archivo-latin-wght-normal.woff2",
+  "./fonts/archivo-latin-ext-wght-normal.woff2",
+  "./fonts/manrope-cyrillic-wght-normal.woff2",
+  "./fonts/manrope-cyrillic-ext-wght-normal.woff2",
   "./icon-192.png",
   "./icon-512.png",
   "./icon-512-maskable.png"
