@@ -8,6 +8,8 @@ const {
   FORM_LABEL,
   LIMITS,
   FORBIDDEN,
+  COMBINED,
+  MAX_UNITS,
   computeDose,
   buildWarnings,
   checkGates,
@@ -46,6 +48,7 @@ test("довідник препаратів заповнений коректн�
 
     for (const [form, list] of Object.entries(drug.forms)) {
       assert.ok(FORM_LABEL[form], id + ": невідома форма " + form);
+      if (!list.length) continue;
       for (const item of list) {
         assert.ok(item.mg > 0, id + "/" + form + ": порожнє дозування");
         assert.ok(item.label && item.label.length > 3, id + "/" + form + ": пресет без підпису");
@@ -57,8 +60,8 @@ test("довідник препаратів заповнений коректн�
   }
 });
 
-test("у довіднику 38 пресетів — регресія на випадкове видалення", () => {
-  assert.equal(PRESETS.length, 38);
+test("у довіднику 41 пресет — регресія на випадкове видалення", () => {
+  assert.equal(PRESETS.length, 41);
 });
 
 /* ─────────────── еталонні розрахунки ─────────────── */
@@ -103,7 +106,7 @@ test("жодна доза не перевищує верхню межу діап
     for (const weightKg of WEIGHTS) {
       const d = computeDose(Object.assign({ weightKg }, p));
       if (!d.ok) { bad.push([p.label, weightKg, "розрахунок не пройшов"]); continue; }
-      const unsuitable = d.flags.includes("supp_too_large") || d.flags.includes("tab_too_large");
+      const unsuitable = d.flags.includes("supp_too_large") || d.flags.includes("tab_too_large") || d.flags.includes("sachet_too_large") || d.flags.includes("chew_too_large");
       if (d.actualMg > d.maxMg + 1e-9 && !unsuitable) {
         bad.push([p.label, weightKg, d.actualMg + " мг > " + d.maxMg + " мг"]);
       }
@@ -117,7 +120,7 @@ test("разова доза ніколи не перевищує дорослу 
     for (const weightKg of [40, 55, 70, 90, 120]) {
       const d = computeDose(Object.assign({ weightKg }, p));
       const ceiling = DRUGS[p.drug].maxSingleMg;
-      const unsuitable = d.flags.includes("supp_too_large") || d.flags.includes("tab_too_large");
+      const unsuitable = d.flags.includes("supp_too_large") || d.flags.includes("tab_too_large") || d.flags.includes("sachet_too_large") || d.flags.includes("chew_too_large");
       if (!unsuitable) {
         assert.ok(d.actualMg <= ceiling + 1e-9,
           p.label + " при " + weightKg + " кг: " + d.actualMg + " мг > " + ceiling + " мг");
@@ -130,7 +133,7 @@ test("добова сума не перевищує межу мг/кг", () => {
   for (const p of PRESETS) {
     for (const weightKg of WEIGHTS) {
       const d = computeDose(Object.assign({ weightKg }, p));
-      const unsuitable = d.flags.includes("supp_too_large") || d.flags.includes("tab_too_large");
+      const unsuitable = d.flags.includes("supp_too_large") || d.flags.includes("tab_too_large") || d.flags.includes("sachet_too_large") || d.flags.includes("chew_too_large");
       if (unsuitable) continue;
       assert.ok(d.dosesPerDay * d.actualMg <= d.dailyLimitMg + 1e-9,
         p.label + " при " + weightKg + " кг: добова сума " + d.dosesPerDay * d.actualMg + " > " + d.dailyLimitMg);
@@ -145,7 +148,7 @@ test("невідповідна форма завжди супроводжуєт�
     for (const weightKg of WEIGHTS) {
       const input = Object.assign({ weightKg, ageMonths: 36 }, p);
       const d = computeDose(input);
-      if (!d.flags.includes("supp_too_large") && !d.flags.includes("tab_too_large")) continue;
+      if (!d.flags.includes("supp_too_large") && !d.flags.includes("tab_too_large") && !d.flags.includes("sachet_too_large") && !d.flags.includes("chew_too_large")) continue;
       seen++;
       const stop = buildWarnings(input, d).filter((w) => w.level === "danger" || w.level === "block");
       assert.ok(stop.length > 0, p.label + " при " + weightKg + " кг: доза завелика, а реакції немає");
@@ -279,12 +282,13 @@ test("порожній або зіпсований час не ламає роз
   assert.equal(nextDoseTime("невідомий", new Date(), 0, now), null);
 });
 
-test("більше двох свічок за раз не пропонується", () => {
-  for (const p of PRESETS.filter((x) => x.form === "supp")) {
+test("неподільні форми не множаться понад межу інструкції", () => {
+  for (const p of PRESETS.filter((x) => ["supp", "sachet", "chew"].includes(x.form))) {
     for (const weightKg of WEIGHTS) {
       const d = computeDose(Object.assign({ weightKg }, p));
-      assert.ok(d.amount <= 2, p.label + " при " + weightKg + " кг: " + d.amount + " свічок за раз");
-      assert.ok(Number.isInteger(d.amount), p.label + ": свічки не діляться");
+      assert.ok(d.amount <= MAX_UNITS[p.form],
+        p.label + " при " + weightKg + " кг: " + d.amount + " штук за раз");
+      assert.ok(Number.isInteger(d.amount), p.label + ": ця форма не ділиться");
     }
   }
 });
@@ -416,4 +420,90 @@ test("межі з протоколів не зникли з таблиці LIMIT
   assert.equal(LIMITS.paracetamol.minWeightKg, 4);
   assert.equal(LIMITS.paracetamol.tabMinAgeMonths, 72);
   assert.equal(LIMITS.ibuprofen.tab[400].minAgeMonths, 144);
+});
+
+test("Apap dla dzieci Forte розпізнається як посилена концентрація", () => {
+  const c = warn({ drug: "paracetamol", form: "syrup", weightKg: 9, ageMonths: 8, concMg: 200, concMl: 5 });
+  assert.ok(c.includes("conc_forte"), "40 мг/мл має підсвічуватися як форте");
+  const d = computeDose({ drug: "paracetamol", form: "syrup", weightKg: 9, concMg: 200, concMl: 5 });
+  assert.equal(d.amount, 3.25, "шприц має поділки по 0,25 мл");
+  assert.equal(d.actualMg, 130, "3,5 мл дали б 140 мг — понад стелю 135, тому крок вниз");
+  assert.ok(d.actualMg <= d.maxMg);
+});
+
+test("доросла таблетка 500 мг: блок до 6 років, попередження про розбіжність UA/PL до 12", () => {
+  const at = (ageMonths) =>
+    checkGates({ drug: "paracetamol", form: "tab", weightKg: 30, ageMonths, concMg: 500 });
+  assert.ok(isBlocked(at(60)), "до 6 років — блок");
+  assert.ok(at(96).some((w) => w.code === "par_tab_500_age"), "6-12 років — попередження");
+  assert.ok(!isBlocked(at(96)), "українська інструкція дозволяє з 6 років");
+  assert.ok(!at(156).some((w) => w.code === "par_tab_500_age"), "після 12 років розбіжності немає");
+});
+
+test("список комбінованих препаратів заповнений", () => {
+  assert.ok(COMBINED.length >= 4);
+  for (const c of COMBINED) assert.ok(c.name && c.what && c.rule, JSON.stringify(c));
+  assert.match(COMBINED.map((c) => c.name).join(" "), /Apap Extra/);
+  assert.match(COMBINED.map((c) => c.what).join(" "), /кофеїн/);
+});
+
+test("саше: вік з інструкції важливіший за арифметику", () => {
+  const at = (concMg, ageMonths) =>
+    checkGates({ drug: "paracetamol", form: "sachet", weightKg: 20, ageMonths, concMg });
+  assert.ok(isBlocked(at(250, 36)), "250 мг — від 4 років");
+  assert.ok(!isBlocked(at(250, 60)));
+  assert.ok(isBlocked(at(500, 96)), "500 мг — від 11 років");
+  assert.ok(!isBlocked(at(500, 144)));
+  assert.ok(at(250, null).some((w) => w.code === "sachet_age_unknown"));
+});
+
+test("саше дозволені раніше за таблетки — гранули не треба ковтати", () => {
+  const age = 60; // 5 років
+  const tab = checkGates({ drug: "paracetamol", form: "tab", weightKg: 18, ageMonths: age, concMg: 250 });
+  const sachet = checkGates({ drug: "paracetamol", form: "sachet", weightKg: 18, ageMonths: age, concMg: 250 });
+  assert.ok(isBlocked(tab), "таблетка у 5 років — ні");
+  assert.ok(!isBlocked(sachet), "саше у 5 років — так");
+});
+
+test("саше рахується цілими одиницями", () => {
+  const d = computeDose({ drug: "paracetamol", form: "sachet", weightKg: 20, concMg: 250 });
+  assert.equal(d.unit, "sachet");
+  assert.equal(d.amount, 1);
+  assert.equal(d.actualMg, 250);
+});
+
+test("ібупрофен не має форми саше — порожній список не ламає довідник", () => {
+  assert.deepEqual(DRUGS.ibuprofen.forms.sachet, []);
+  assert.ok(DRUGS.paracetamol.forms.sachet.length > 0);
+});
+
+test("жувальні капсули відтворюють таблицю з інструкції Nurofen Junior", () => {
+  const at = (weightKg) => computeDose({ drug: "ibuprofen", form: "chew", weightKg, concMg: 100 });
+  assert.equal(at(25).amount, 2, "20-29 кг — 2 капсули");
+  assert.equal(at(25).actualMg, 200);
+  assert.equal(at(35).amount, 3, "30-40 кг — 3 капсули");
+  assert.equal(at(35).actualMg, 300);
+  assert.equal(at(25).dosesPerDay, 3, "тричі на добу");
+});
+
+test("жувальні капсули мають власне вікове й вагове вікно", () => {
+  const gate = (ageMonths, weightKg) =>
+    checkGates({ drug: "ibuprofen", form: "chew", weightKg, ageMonths, concMg: 100 });
+  assert.ok(isBlocked(gate(60, 18)), "5 років і 18 кг — ні");
+  assert.ok(isBlocked(gate(96, 18)), "вік підходить, вага ні");
+  assert.ok(!isBlocked(gate(96, 25)), "8 років і 25 кг — так");
+  assert.ok(gate(156, 45).some((w) => w.code === "chew_weight_high"), "понад 40 кг — доросле дозування");
+});
+
+test("парацетамол не має жувальних капсул, ібупрофен не має саше", () => {
+  assert.deepEqual(DRUGS.paracetamol.forms.chew, []);
+  assert.deepEqual(DRUGS.ibuprofen.forms.sachet, []);
+  assert.ok(DRUGS.ibuprofen.forms.chew.length > 0);
+  assert.ok(DRUGS.paracetamol.forms.sachet.length > 0);
+});
+
+test("кожна неподільна форма має власну межу кількості", () => {
+  assert.equal(MAX_UNITS.supp, 2);
+  assert.equal(MAX_UNITS.sachet, 2);
+  assert.ok(MAX_UNITS.chew >= 3, "інструкція допускає 3 капсули на прийом");
 });

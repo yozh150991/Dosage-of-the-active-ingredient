@@ -22,10 +22,11 @@ const DRUGS = {
     minAgeMonths: 3,
     forms: {
       syrup: [
-        { mg: 120, ml: 5, group: "ua", label: "120 мг / 5 мл — Панадол Бебі, Парацетамол Бебі, Дофалган" },
+        { mg: 120, ml: 5, group: "ua", label: "120 мг / 5 мл — Панадол Бебі, Парацетамол Бебі, Дофалган, Піарон" },
         { mg: 150, ml: 5, group: "ua", label: "150 мг / 5 мл — Ефералган сироп 3%" },
         { mg: 250, ml: 5, group: "ua", label: "250 мг / 5 мл — Парацетамол сироп для дітей від 6 років" },
         { mg: 120, ml: 5, group: "pl", label: "120 мг / 5 мл — Panadol dla dzieci, Paracetamol Aflofarm" },
+        { mg: 200, ml: 5, group: "pl", label: "200 мг / 5 мл (40 мг/мл) — Apap dla dzieci Forte" },
         { mg: 100, ml: 1, group: "pl", label: "100 мг / 1 мл — Pedicetamol krople (обережно, це краплі)" },
         { mg: 120, ml: 5, group: "eu", label: "120 мг / 5 мл — Calpol Infant (UK), Doliprane 2,4% (FR)" },
         { mg: 250, ml: 5, group: "eu", label: "250 мг / 5 мл — Calpol Six Plus (UK), від 6 років" },
@@ -48,8 +49,13 @@ const DRUGS = {
         { mg: 200, group: "ua", label: "200 мг — Парацетамол дитячий" },
         { mg: 325, group: "ua", label: "325 мг" },
         { mg: 500, group: "ua", label: "500 мг — доросла таблетка" },
-        { mg: 250, group: "eu", label: "250 мг — ben-u-ron direkt, саше 4–11 років" },
-        { mg: 500, group: "eu", label: "500 мг — саше, від 11 років" }
+        { mg: 500, group: "pl", label: "500 мг — Apap (від 12 років)" }
+      ],
+      chew: [],
+      sachet: [
+        { mg: 250, group: "pl", label: "250 мг — Apap Junior, гранули на язик (від 4 років)" },
+        { mg: 250, group: "eu", label: "250 мг — ben-u-ron direkt (4–11 років)" },
+        { mg: 500, group: "eu", label: "500 мг — ben-u-ron direkt (від 11 років)" }
       ]
     }
   },
@@ -66,9 +72,9 @@ const DRUGS = {
     minAgeMonths: 3,
     forms: {
       syrup: [
-        { mg: 100, ml: 5, group: "ua", label: "100 мг / 5 мл — Нурофєн для дітей, Ібупрофен Бебі" },
+        { mg: 100, ml: 5, group: "ua", label: "100 мг / 5 мл — Нурофєн, Ібуфен, Ібупрофен Бебі, Ібунорм Бебі, Бофен, Імет 2%" },
         { mg: 200, ml: 5, group: "ua", label: "200 мг / 5 мл — Нурофєн для дітей форте" },
-        { mg: 100, ml: 5, group: "pl", label: "100 мг / 5 мл — Nurofen dla dzieci, Ibufen D" },
+        { mg: 100, ml: 5, group: "pl", label: "100 мг / 5 мл — Nurofen dla dzieci, Ibufen D, Ibum" },
         { mg: 200, ml: 5, group: "pl", label: "200 мг / 5 мл — Nurofen Forte, Ibufen Forte, Ibum Forte" },
         { mg: 100, ml: 5, group: "eu", label: "100 мг / 5 мл — Calprofen (UK), Nurofen Junior 2% (DE)" },
         { mg: 200, ml: 5, group: "eu", label: "200 мг / 5 мл — Nureflex, Nurofen Junior 4%" },
@@ -80,8 +86,11 @@ const DRUGS = {
         { mg: 125, group: "pl", label: "125 мг — Nurofen dla dzieci czopki, від 12,5 кг" },
         { mg: 125, group: "eu", label: "125 мг — Nurofen Junior Zäpfchen" }
       ],
+      sachet: [],
+      chew: [
+        { mg: 100, group: "pl", label: "100 мг — Nurofen dla dzieci Junior (7-12 років, 20-40 кг)" }
+      ],
       tab: [
-        { mg: 100, group: "ua", label: "100 мг — жувальні або в оболонці" },
         { mg: 200, group: "ua", label: "200 мг — Нурофєн, від 20 кг" },
         { mg: 400, group: "ua", label: "400 мг — Нурофєн форте, від 12 років" }
       ]
@@ -95,7 +104,7 @@ const GROUPS = [
   ["eu", "Німеччина, Австрія, Велика Британія, Франція"]
 ];
 
-const FORM_LABEL = { syrup: "Сироп або суспензія", supp: "Свічки", tab: "Таблетки" };
+const FORM_LABEL = { syrup: "Сироп або суспензія", supp: "Свічки", tab: "Таблетки", sachet: "Саше або гранули", chew: "Жувальні капсули" };
 
 /* Порогові концентрації, за якими легко сплутати флакони, мг/мл */
 const CONC_FORTE = 40;
@@ -113,7 +122,13 @@ const LIMITS = {
 
   paracetamol: {
     minWeightKg: 4,               // Ефералган: від 4 кг
-    tabMinAgeMonths: 72,          // тверді форми — від 6 років
+    tabMinAgeMonths: 72,          // тверді форми — від 6 років (інструкції UA)
+    tab500PlMinAgeMonths: 144,    // Apap 500 мг (PL) — від 12 років
+    /* саше/гранули не треба ковтати цілими, тому поріг нижчий за таблетки */
+    sachet: {
+      250: { minAgeMonths: 48 },  // Apap Junior, ben-u-ron direkt
+      500: { minAgeMonths: 132 }  // ben-u-ron direkt — від 11 років
+    },
     concSchoolAgeMgPerMl: 50,     // 250 мг/5 мл — форма для дітей від 6 років
     /* номінал свічки → допустима вага, кг */
     supp: {
@@ -139,6 +154,10 @@ const LIMITS = {
       60:  { min: 6,    max: 12.5 },
       125: { min: 12.5, max: 20 }
     },
+    /* жувальні капсули: ковтати цілими не треба, але доза фіксована */
+    chew: {
+      100: { minAgeMonths: 84, minWeightKg: 20, maxWeightKg: 40 }
+    },
     /* номінал таблетки → мінімальні вік і вага */
     tab: {
       100: { minAgeMonths: 72,  minWeightKg: 20 },
@@ -148,6 +167,15 @@ const LIMITS = {
   }
 };
 
+/* Комбіновані препарати під тим самим брендом: парацетамол там є,
+   але калькулятор їх не рахує — доза рахується лише для монопрепаратів. */
+const COMBINED = [
+  { name: "Apap Extra", what: "парацетамол 500 мг + кофеїн 65 мг", rule: "від 12 років" },
+  { name: "Apap Noc", what: "парацетамол + дифенгідрамін (снодійний компонент)", rule: "від 12 років" },
+  { name: "Apap Przeziębienie, Apap Zatoki", what: "парацетамол + судинозвужувальний компонент", rule: "від 12 років" },
+  { name: "Порошки від застуди (Theraflu, Coldrex тощо)", what: "парацетамол у повній дорослій дозі", rule: "не для малих дітей" }
+];
+
 /* Препарати, які дітям не можна взагалі — калькулятор їх не рахує,
    але батько має про це прочитати (розділ «Джерела»). */
 const FORBIDDEN = [
@@ -156,8 +184,11 @@ const FORBIDDEN = [
   { name: "Метамізол (анальгін)", rule: "до 1 року заборонений, далі лише за призначенням лікаря", why: "ризик агранулоцитозу" }
 ];
 
-/* Максимум свічок на один прийом */
-const MAX_SUPPOSITORIES = 2;
+/* Максимум неподільних одиниць на один прийом.
+   Свічок і саше — дві; жувальних капсул інструкція допускає до трьох
+   (Nurofen Junior: 30-40 кг = 3 капсули), тому тут межа вища. */
+const MAX_UNITS = { supp: 2, sachet: 2, chew: 4 };
+const MAX_SUPPOSITORIES = MAX_UNITS.supp;
 
 /* Разова доза.
    Повертає { ok, error } або { ok:true, amount, unit, actualMg, ... , flags }.
@@ -195,18 +226,18 @@ function computeDose(input) {
     if (amount > 20) flags.push("volume_large");
     if (mgPerMl >= CONC_DROPS) flags.push("conc_drops");
     else if (mgPerMl >= CONC_FORTE) flags.push("conc_forte");
-  } else if (form === "supp") {
+  } else if (form === "supp" || form === "sachet" || form === "chew") {
     /* Більше двох свічок за раз не вводять: якщо арифметика вимагає більше,
        номінал просто замалий для цієї ваги. Знайдено тестом на 25 кг × 80 мг,
        де розрахунок пропонував 4 свічки. */
     const wanted = Math.round(targetMg / concMg);
-    let n = Math.max(1, Math.min(MAX_SUPPOSITORIES, wanted));
+    let n = Math.max(1, Math.min(MAX_UNITS[form], wanted));
     while (n * concMg > maxMg && n > 1) n--;
     amount = n;
-    unit = "supp";
+    unit = form;
     actualMg = n * concMg;
-    if (actualMg > maxMg) flags.push("supp_too_large");
-    else if (actualMg < minMg) flags.push("supp_below_min");
+    if (actualMg > maxMg) flags.push(form + "_too_large");
+    else if (actualMg < minMg) flags.push(form + "_below_min");
   } else {
     const step = 0.5;
     let n = Math.max(step, Math.round(targetMg / concMg / step) * step);
@@ -306,9 +337,47 @@ function checkGates(input) {
       push("warn", "tab_age_unknown",
         "Вкажіть вік: тверді таблетки не дають дітям до 6 років, а номінали 200 і 400 мг мають власні вікові межі.");
     }
+    if (drugId === "paracetamol" && conc >= 500 && knownAge &&
+        months >= LIMITS.paracetamol.tabMinAgeMonths &&
+        months < LIMITS.paracetamol.tab500PlMinAgeMonths) {
+      push("warn", "par_tab_500_age",
+        "Польський Apap 500 мг — від 12 років, українська інструкція на парацетамол 500 мг дозволяє з 6 років по половині таблетки. Якщо є сироп або свічки, у цьому віці вони точніші за поділену таблетку.");
+    }
     if (tabRule && knownWeight && weight < tabRule.minWeightKg) {
       push("block", "tab_weight",
         "Таблетка " + conc + " мг розрахована на масу від " + tabRule.minWeightKg + " кг.");
+    }
+  }
+
+  /* 4а. Саше з гранулами: ковтати не треба, тому поріг нижчий за таблетки,
+     але номінал усе одно фіксований і має власний вік за інструкцією */
+  if (form === "sachet" && isFinite(conc)) {
+    const rule = lim.sachet && lim.sachet[conc];
+    const minAge = rule ? rule.minAgeMonths : 48;
+    if (knownAge && months < minAge) {
+      push("block", "sachet_age",
+        "Саше " + conc + " мг за інструкцією призначене дітям від " + Math.round(minAge / 12) + " років. Доза в ньому фіксована й не ділиться — для меншої дитини потрібна рідка форма або свічки.");
+    } else if (!knownAge) {
+      push("warn", "sachet_age_unknown",
+        "Вкажіть вік: саше має фіксовану дозу й власну вікову межу (250 мг — від 4 років, 500 мг — від 11).");
+    }
+  }
+
+  /* 4б. Жувальні капсули: власне вікове і вагове вікно за інструкцією */
+  if (form === "chew" && isFinite(conc)) {
+    const rule = lim.chew && lim.chew[conc];
+    if (rule) {
+      if (knownAge && months < rule.minAgeMonths) {
+        push("block", "chew_age",
+          "Жувальні капсули " + conc + " мг призначені дітям від " + Math.round(rule.minAgeMonths / 12) + " років. Молодшій дитині потрібна суспензія.");
+      }
+      if (knownWeight && weight < rule.minWeightKg) {
+        push("block", "chew_weight",
+          "Жувальні капсули розраховані на масу від " + rule.minWeightKg + " кг.");
+      } else if (rule.maxWeightKg && knownWeight && weight > rule.maxWeightKg) {
+        push("warn", "chew_weight_high",
+          "Ця форма розрахована на масу до " + rule.maxWeightKg + " кг. Для більшої дитини діють дорослі дозування.");
+      }
     }
   }
 
@@ -362,6 +431,18 @@ function buildWarnings(input, dose) {
   if (flags.indexOf("supp_below_min") > -1) {
     push("warn", "supp_below_min", "Ця свічка дає менше за мінімальну ефективну дозу. Ефект може бути слабким — підберіть свічку більшого номіналу.");
   }
+  if (flags.indexOf("sachet_too_large") > -1) {
+    push("danger", "sachet_too_large", "Саше " + input.concMg + " мг завелике для ваги " + weight + " кг. Гранули не діляться — потрібна рідка форма.");
+  }
+  if (flags.indexOf("sachet_below_min") > -1) {
+    push("warn", "sachet_below_min", "Це саше дає менше за мінімальну ефективну дозу для такої ваги.");
+  }
+  if (flags.indexOf("chew_too_large") > -1) {
+    push("danger", "chew_too_large", "Навіть одна капсула " + input.concMg + " мг перевищує дозу для цієї ваги.");
+  }
+  if (flags.indexOf("chew_below_min") > -1) {
+    push("warn", "chew_below_min", "Стільки капсул дає менше за мінімальну ефективну дозу.");
+  }
   if (flags.indexOf("tab_too_large") > -1) {
     push("danger", "tab_too_large", "Навіть половина таблетки " + input.concMg + " мг перевищує дозу для цієї ваги. Потрібна рідка форма або свічки.");
   }
@@ -409,12 +490,14 @@ return {
   GROUPS: GROUPS,
   LIMITS: LIMITS,
   FORBIDDEN: FORBIDDEN,
+  COMBINED: COMBINED,
   checkGates: checkGates,
   isBlocked: isBlocked,
   FORM_LABEL: FORM_LABEL,
   CONC_FORTE: CONC_FORTE,
   CONC_DROPS: CONC_DROPS,
   MAX_SUPPOSITORIES: MAX_SUPPOSITORIES,
+  MAX_UNITS: MAX_UNITS,
   computeDose: computeDose,
   buildWarnings: buildWarnings,
   nextDoseTime: nextDoseTime
