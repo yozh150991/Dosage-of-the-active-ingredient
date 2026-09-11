@@ -15,6 +15,7 @@ const {
   buildWarnings,
   checkGates,
   isBlocked,
+  doseIntervalHours,
   nextDoseTime
 } = require("../calc-core.js");
 
@@ -682,4 +683,64 @@ test("очищений ввід завжди або порожній, або к�
     assert.ok(n > 0, raw + " → " + v + " не додатне");
     assert.ok(!/^0/.test(v), raw + " → " + v + " починається з нуля");
   }
+});
+
+/* ─────────────── вік до 3 місяців ─────────────── */
+
+const infant = (extra) => checkGates(Object.assign(
+  { drug: "paracetamol", form: "syrup", weightKg: 5, ageMonths: 1.5, concMg: 120, concMl: 5 }, extra));
+
+test("за замовчуванням до 3 місяців доза не показується", () => {
+  const notes = infant({});
+  assert.ok(isBlocked(notes));
+  assert.equal(notes[0].code, "age_under_3m");
+  assert.equal(notes.length, 1, "решта порад при блокуванні лише відволікає");
+});
+
+test("підтвердження призначення лікаря відкриває розрахунок", () => {
+  const notes = infant({ prescribedByDoctor: true });
+  assert.ok(!isBlocked(notes), "лікар має право призначити парацетамол у цьому віці");
+  assert.ok(notes.some((w) => w.code === "infant_prescribed_mode" && w.level === "warn"));
+});
+
+test("режим призначення не скасовує запобіжників", () => {
+  assert.ok(isBlocked(infant({ prescribedByDoctor: true, preterm: true })), "недоношеність");
+  assert.ok(isBlocked(infant({ prescribedByDoctor: true, weightKg: 3.5 })), "маса менша за 4 кг");
+  assert.ok(isBlocked(infant({ prescribedByDoctor: true, weightKg: NaN })), "вага не вказана");
+  assert.ok(isBlocked(infant({ prescribedByDoctor: true, drug: "ibuprofen" })), "ібупрофен до 3 місяців");
+  assert.ok(isBlocked(infant({ prescribedByDoctor: true, form: "tab", concMg: 500 })), "таблетка немовляті");
+});
+
+test("кожне блокування в режимі призначення має власну причину", () => {
+  const codeOf = (extra) => infant(extra).find((w) => w.level === "block").code;
+  assert.equal(codeOf({ prescribedByDoctor: true, preterm: true }), "preterm_doctor_only");
+  assert.equal(codeOf({ prescribedByDoctor: true, weightKg: 3.5 }), "infant_weight_below_4");
+  assert.equal(codeOf({ prescribedByDoctor: true, weightKg: NaN }), "infant_weight_unknown");
+  assert.equal(codeOf({ prescribedByDoctor: true, drug: "ibuprofen" }), "ibu_infant_blocked");
+});
+
+test("у 2 місяці згадується поствакцинальний сценарій, у 1 місяць — ні", () => {
+  assert.ok(infant({ prescribedByDoctor: true, ageMonths: 2 }).some((w) => w.code === "postvaccine_2m"));
+  assert.ok(!infant({ prescribedByDoctor: true, ageMonths: 1 }).some((w) => w.code === "postvaccine_2m"));
+});
+
+test("від 3 місяців режим призначення нічого не змінює", () => {
+  const base = { drug: "paracetamol", form: "syrup", weightKg: 6, ageMonths: 4, concMg: 120, concMl: 5 };
+  const plain = checkGates(base).map((w) => w.code);
+  const withFlag = checkGates(Object.assign({ prescribedByDoctor: true }, base)).map((w) => w.code);
+  assert.deepEqual(plain, withFlag, "прапорець не має впливати поза віком до 3 місяців");
+});
+
+test("інтервал для немовляти — 6 годин, для старших дітей звичайний", () => {
+  assert.equal(doseIntervalHours({ drug: "paracetamol", ageMonths: 1.5 }), 6);
+  assert.equal(doseIntervalHours({ drug: "paracetamol", ageMonths: 36 }), DRUGS.paracetamol.intervalHours);
+  assert.equal(doseIntervalHours({ drug: "paracetamol", ageMonths: null }), DRUGS.paracetamol.intervalHours);
+  assert.equal(doseIntervalHours({ drug: "ibuprofen", ageMonths: 36 }), DRUGS.ibuprofen.intervalHours);
+});
+
+test("доза для немовляти відповідає інструкції Ефералгану", () => {
+  const d = computeDose({ drug: "paracetamol", form: "syrup", weightKg: 4, concMg: 120, concMl: 5 });
+  assert.equal(d.actualMg, 60, "4 кг × 15 мг/кг = 60 мг — перший рядок таблиці інструкції");
+  assert.equal(d.dailyLimitMg, 240, "60 мг/кг на добу");
+  assert.equal(d.dosesPerDay, 4);
 });

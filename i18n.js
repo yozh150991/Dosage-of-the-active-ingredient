@@ -26,6 +26,11 @@ const UI = {
     years: "років",
     months: "місяців",
     ageNote: "Вік не змінює дозу — за ним перевіряємо вікові обмеження препарату.",
+    infantTitle: "Дитині менше 3 місяців",
+    prescribed: "Парацетамол призначив лікар",
+    preterm: "Народилася раніше 37 тижнів",
+    infantHint: "Ці позначки діють лише в цьому сеансі й не зберігаються.",
+    intervalInfant: "не раніше ніж через 6 год",
     drugLabel: "Препарат",
     paracetamol: "Парацетамол",
     ibuprofen: "Ібупрофен",
@@ -118,6 +123,11 @@ const UI = {
     years: "years",
     months: "months",
     ageNote: "Age doesn't change the dose — it's used to check the medicine's age limits.",
+    infantTitle: "The child is under 3 months",
+    prescribed: "A doctor prescribed paracetamol",
+    preterm: "Born before 37 weeks",
+    infantHint: "These stay in this session only and aren't saved.",
+    intervalInfant: "no sooner than 6 h",
     drugLabel: "Medicine",
     paracetamol: "Paracetamol",
     ibuprofen: "Ibuprofen",
@@ -199,8 +209,32 @@ const UI = {
 /* Повідомлення калькулятора. Ключ — код із ядра. */
 const NOTES = {
   age_under_3m: {
-    uk: () => "<b>Дитині менше 3 місяців.</b> Гарячка в цьому віці — привід звернутися по медичну допомогу сьогодні, а не давати жарознижувальне вдома. Дозу для немовляти призначає лікар.",
-    en: () => "<b>The child is under 3 months old.</b> Fever at this age needs medical attention today, not a home dose. A doctor prescribes for infants."
+    uk: () => "<b>Дитині менше 3 місяців.</b> Гарячка в цьому віці потребує огляду лікаря: вона буває єдиною ознакою серйозної інфекції, а збита температура ускладнює оцінку стану. Не давайте жарознижувальне до огляду. Якщо лікар уже призначив парацетамол, позначте це нижче — покажемо розрахунок.",
+    en: () => "<b>The child is under 3 months old.</b> Fever at this age needs a doctor's review: it can be the only sign of a serious infection, and lowering it makes the child harder to assess. Don't give anything before that review. If a doctor has already prescribed paracetamol, tick the box below and we'll show the calculation."
+  },
+  infant_prescribed_mode: {
+    uk: (v) => "<b>Розрахунок за призначенням лікаря.</b> Для віку до 3 місяців інструкції дають 15 мг/кг разово, максимум 60 мг/кг на добу, з інтервалом <b>не менше " + v.hours + " годин</b> — рідше, ніж у старших дітей. Дотримуйтесь того, що призначив лікар, а не цієї цифри, якщо вони різняться.",
+    en: (v) => "<b>Calculated under a doctor's prescription.</b> Under 3 months the leaflets give 15 mg/kg per dose, up to 60 mg/kg a day, at intervals of <b>at least " + v.hours + " hours</b> — less often than for older children. If this differs from what your doctor said, follow the doctor."
+  },
+  infant_weight_below_4: {
+    uk: (v) => "У віці до 3 місяців розрахунок можливий від маси " + v.kg + " кг — це нижня межа зареєстрованих форм. Для меншої ваги дозу визначає лікар індивідуально.",
+    en: (v) => "Under 3 months the calculation starts at " + v.kg + " kg, the lower limit of the licensed forms. Below that a doctor sets the dose individually."
+  },
+  infant_weight_unknown: {
+    uk: () => "Вкажіть вагу: у віці до 3 місяців доза рахується тільки за нею, а нижня межа зареєстрованих форм — 4 кг.",
+    en: () => "Enter the weight: under 3 months the dose depends on it alone, and the licensed forms start at 4 kg."
+  },
+  preterm_doctor_only: {
+    uk: () => "Для дитини, народженої раніше 37 тижнів, калькулятор дозу не рахує. Парацетамол у недоношених дозується за віком від зачаття, а не за вагою, і призначається лише лікарем.",
+    en: () => "For a baby born before 37 weeks we don't calculate. Paracetamol in preterm infants is dosed by post-conceptual age rather than weight, and only by a doctor."
+  },
+  ibu_infant_blocked: {
+    uk: () => "Ібупрофен у віці до 3 місяців не застосовують — це стосується і призначення лікаря теж. У цьому віці препаратом вибору є парацетамол.",
+    en: () => "Ibuprofen is not used under 3 months — that holds even with a prescription. Paracetamol is the medicine of choice at this age."
+  },
+  postvaccine_2m: {
+    uk: () => "Якщо температура з'явилася після щеплення у 2 місяці, це окрема ситуація: парацетамол у ній застосовують за рекомендацією лікаря чи медсестри, коротким курсом. Профілактично, «про всяк випадок», його не дають.",
+    en: () => "If the fever followed the 2-month vaccinations, that's a distinct case: paracetamol is used there on the advice of a doctor or nurse, briefly. It isn't given prophylactically, just in case."
   },
   ibu_under_6m: {
     uk: () => "Європейські інструкції дозволяють ібупрофен з 3 місяців, американські (AAP, FDA) — лише з 6. Якщо симптоми тримаються довше <b>24 годин</b> або після трьох доз — до лікаря негайно.",

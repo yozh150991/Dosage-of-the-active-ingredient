@@ -123,6 +123,13 @@ const LIMITS = {
 
   paracetamol: {
     minWeightKg: 4,               // Ефералган: від 4 кг
+    /* Режим "за призначенням лікаря" для віку до 3 місяців.
+       Джерело: Ефералган розчин 3% UA/5237/02/01 — від 1 місяця і 4 кг,
+       15 мг/кг разово, до 60 мг/кг на добу, інтервал не менше 6 годин.
+       Те саме в ChPL APAP dla dzieci Forte (PL) і ben-u-ron 75 мг (DE):
+       форма дозволена з народження, але до 3 місяців — лише за призначенням. */
+    infantMinWeightKg: 4,
+    infantIntervalHours: 6,
     tabMinAgeMonths: 72,          // тверді форми — від 6 років (інструкції UA)
     tab500PlMinAgeMonths: 144,    // Apap 500 мг (PL) — від 12 років
     /* саше/гранули не треба ковтати цілими, тому поріг нижчий за таблетки */
@@ -289,10 +296,37 @@ function checkGates(input) {
   const knownAge = months !== null && isFinite(months);
   const knownWeight = isFinite(weight) && weight > 0;
 
-  /* 1. Гарячка в перші три місяці — це завжди лікар */
+  /* 1. Перші три місяці.
+     Гарячка в цьому віці — показання до огляду, бо може бути єдиною ознакою
+     серйозної інфекції (NICE NG143, п. 1.2.12). Тому за замовчуванням дозу
+     не показуємо. Але препарат у цьому віці існує і законно призначається,
+     тож є окремий режим: батько підтверджує призначення лікаря і бачить
+     розрахунок — із власними, суворішими запобіжниками. */
   if (knownAge && months < LIMITS.doctorOnlyAgeMonths) {
-    push("block", "age_under_3m");
-    return out;
+    if (!input.prescribedByDoctor) {
+      push("block", "age_under_3m");
+      return out;
+    }
+    if (drugId === "ibuprofen") {
+      push("block", "ibu_infant_blocked");
+      return out;
+    }
+    if (input.preterm) {
+      push("block", "preterm_doctor_only");
+      return out;
+    }
+    if (knownWeight && weight < LIMITS.paracetamol.infantMinWeightKg) {
+      push("block", "infant_weight_below_4", { kg: LIMITS.paracetamol.infantMinWeightKg });
+      return out;
+    }
+    if (!knownWeight) {
+      push("block", "infant_weight_unknown");
+      return out;
+    }
+    push("warn", "infant_prescribed_mode", { hours: LIMITS.paracetamol.infantIntervalHours });
+    if (months >= 2) push("info", "postvaccine_2m");
+    /* далі працюють звичайні гейти форми випуску:
+       таблетки, саше й жувальні капсули в цьому віці заблокує їхній власний вік */
   }
 
   /* 2. Ібупрофен: нижня межа і зона обережності */
@@ -391,6 +425,19 @@ function checkGates(input) {
   }
 
   return out;
+}
+
+/* Мінімальний інтервал між дозами для конкретного випадку, годин.
+   До 3 місяців парацетамол дають не частіше ніж раз на 6 годин
+   (Ефералган UA/5237/02/01), тоді як звичайна межа — 4-6 годин. */
+function doseIntervalHours(input) {
+  const drug = DRUGS[input.drug];
+  if (!drug) return null;
+  const m = input.ageMonths;
+  const infant = m !== null && m !== undefined && m !== "" && isFinite(Number(m)) &&
+                 Number(m) < LIMITS.doctorOnlyAgeMonths;
+  if (infant && input.drug === "paracetamol") return LIMITS.paracetamol.infantIntervalHours;
+  return drug.intervalHours;
 }
 
 function isBlocked(notes) {
@@ -516,6 +563,7 @@ return {
   COMBINED: COMBINED,
   checkGates: checkGates,
   isBlocked: isBlocked,
+  doseIntervalHours: doseIntervalHours,
   FORM_LABEL: FORM_LABEL,
   CONC_FORTE: CONC_FORTE,
   CONC_DROPS: CONC_DROPS,

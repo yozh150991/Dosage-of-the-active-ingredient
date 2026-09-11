@@ -135,6 +135,14 @@ select{
   background:var(--color-bg);color:var(--color-text);font-size:16px;padding:0 12px;
 }
 .agerow select{width:150px;flex:0 0 auto}
+.infant{margin-top:16px;padding-top:16px;border-top:1px solid var(--color-divider)}
+.infant .lbl{margin:0 0 10px}
+.switches{display:flex;flex-wrap:wrap;gap:8px}
+.switches button{
+  padding:10px 16px;border-radius:999px;border:2px solid var(--color-divider);background:transparent;
+  color:var(--color-neutral-700);font-size:14px;cursor:pointer;transition:all .15s;
+}
+.switches button[aria-pressed="true"]{background:var(--color-accent);border-color:var(--color-accent);color:#fff;font-weight:800}
 .note-sm{font-size:12px;color:var(--color-neutral-600);margin:12px 0 0}
 
 .drugs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -261,6 +269,14 @@ th{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--colo
         <select id="ageUnit"><option value="years"></option><option value="months"></option></select>
       </div>
       <p class="note-sm" id="l-agenote"></p>
+      <div class="infant" id="infant" hidden>
+        <p class="lbl" id="l-infant-title"></p>
+        <div class="switches">
+          <button type="button" id="sw-prescribed" aria-pressed="false"></button>
+          <button type="button" id="sw-preterm" aria-pressed="false"></button>
+        </div>
+        <p class="note-sm" id="l-infant-hint"></p>
+      </div>
     </section>
 
     <section class="soft" id="alert-child" hidden>
@@ -465,6 +481,13 @@ const LIMITS = {
 
   paracetamol: {
     minWeightKg: 4,               // Ефералган: від 4 кг
+    /* Режим "за призначенням лікаря" для віку до 3 місяців.
+       Джерело: Ефералган розчин 3% UA/5237/02/01 — від 1 місяця і 4 кг,
+       15 мг/кг разово, до 60 мг/кг на добу, інтервал не менше 6 годин.
+       Те саме в ChPL APAP dla dzieci Forte (PL) і ben-u-ron 75 мг (DE):
+       форма дозволена з народження, але до 3 місяців — лише за призначенням. */
+    infantMinWeightKg: 4,
+    infantIntervalHours: 6,
     tabMinAgeMonths: 72,          // тверді форми — від 6 років (інструкції UA)
     tab500PlMinAgeMonths: 144,    // Apap 500 мг (PL) — від 12 років
     /* саше/гранули не треба ковтати цілими, тому поріг нижчий за таблетки */
@@ -631,10 +654,37 @@ function checkGates(input) {
   const knownAge = months !== null && isFinite(months);
   const knownWeight = isFinite(weight) && weight > 0;
 
-  /* 1. Гарячка в перші три місяці — це завжди лікар */
+  /* 1. Перші три місяці.
+     Гарячка в цьому віці — показання до огляду, бо може бути єдиною ознакою
+     серйозної інфекції (NICE NG143, п. 1.2.12). Тому за замовчуванням дозу
+     не показуємо. Але препарат у цьому віці існує і законно призначається,
+     тож є окремий режим: батько підтверджує призначення лікаря і бачить
+     розрахунок — із власними, суворішими запобіжниками. */
   if (knownAge && months < LIMITS.doctorOnlyAgeMonths) {
-    push("block", "age_under_3m");
-    return out;
+    if (!input.prescribedByDoctor) {
+      push("block", "age_under_3m");
+      return out;
+    }
+    if (drugId === "ibuprofen") {
+      push("block", "ibu_infant_blocked");
+      return out;
+    }
+    if (input.preterm) {
+      push("block", "preterm_doctor_only");
+      return out;
+    }
+    if (knownWeight && weight < LIMITS.paracetamol.infantMinWeightKg) {
+      push("block", "infant_weight_below_4", { kg: LIMITS.paracetamol.infantMinWeightKg });
+      return out;
+    }
+    if (!knownWeight) {
+      push("block", "infant_weight_unknown");
+      return out;
+    }
+    push("warn", "infant_prescribed_mode", { hours: LIMITS.paracetamol.infantIntervalHours });
+    if (months >= 2) push("info", "postvaccine_2m");
+    /* далі працюють звичайні гейти форми випуску:
+       таблетки, саше й жувальні капсули в цьому віці заблокує їхній власний вік */
   }
 
   /* 2. Ібупрофен: нижня межа і зона обережності */
@@ -733,6 +783,19 @@ function checkGates(input) {
   }
 
   return out;
+}
+
+/* Мінімальний інтервал між дозами для конкретного випадку, годин.
+   До 3 місяців парацетамол дають не частіше ніж раз на 6 годин
+   (Ефералган UA/5237/02/01), тоді як звичайна межа — 4-6 годин. */
+function doseIntervalHours(input) {
+  const drug = DRUGS[input.drug];
+  if (!drug) return null;
+  const m = input.ageMonths;
+  const infant = m !== null && m !== undefined && m !== "" && isFinite(Number(m)) &&
+                 Number(m) < LIMITS.doctorOnlyAgeMonths;
+  if (infant && input.drug === "paracetamol") return LIMITS.paracetamol.infantIntervalHours;
+  return drug.intervalHours;
 }
 
 function isBlocked(notes) {
@@ -858,6 +921,7 @@ return {
   COMBINED: COMBINED,
   checkGates: checkGates,
   isBlocked: isBlocked,
+  doseIntervalHours: doseIntervalHours,
   FORM_LABEL: FORM_LABEL,
   CONC_FORTE: CONC_FORTE,
   CONC_DROPS: CONC_DROPS,
@@ -900,6 +964,11 @@ const UI = {
     years: "років",
     months: "місяців",
     ageNote: "Вік не змінює дозу — за ним перевіряємо вікові обмеження препарату.",
+    infantTitle: "Дитині менше 3 місяців",
+    prescribed: "Парацетамол призначив лікар",
+    preterm: "Народилася раніше 37 тижнів",
+    infantHint: "Ці позначки діють лише в цьому сеансі й не зберігаються.",
+    intervalInfant: "не раніше ніж через 6 год",
     drugLabel: "Препарат",
     paracetamol: "Парацетамол",
     ibuprofen: "Ібупрофен",
@@ -992,6 +1061,11 @@ const UI = {
     years: "years",
     months: "months",
     ageNote: "Age doesn't change the dose — it's used to check the medicine's age limits.",
+    infantTitle: "The child is under 3 months",
+    prescribed: "A doctor prescribed paracetamol",
+    preterm: "Born before 37 weeks",
+    infantHint: "These stay in this session only and aren't saved.",
+    intervalInfant: "no sooner than 6 h",
     drugLabel: "Medicine",
     paracetamol: "Paracetamol",
     ibuprofen: "Ibuprofen",
@@ -1073,8 +1147,32 @@ const UI = {
 /* Повідомлення калькулятора. Ключ — код із ядра. */
 const NOTES = {
   age_under_3m: {
-    uk: () => "<b>Дитині менше 3 місяців.</b> Гарячка в цьому віці — привід звернутися по медичну допомогу сьогодні, а не давати жарознижувальне вдома. Дозу для немовляти призначає лікар.",
-    en: () => "<b>The child is under 3 months old.</b> Fever at this age needs medical attention today, not a home dose. A doctor prescribes for infants."
+    uk: () => "<b>Дитині менше 3 місяців.</b> Гарячка в цьому віці потребує огляду лікаря: вона буває єдиною ознакою серйозної інфекції, а збита температура ускладнює оцінку стану. Не давайте жарознижувальне до огляду. Якщо лікар уже призначив парацетамол, позначте це нижче — покажемо розрахунок.",
+    en: () => "<b>The child is under 3 months old.</b> Fever at this age needs a doctor's review: it can be the only sign of a serious infection, and lowering it makes the child harder to assess. Don't give anything before that review. If a doctor has already prescribed paracetamol, tick the box below and we'll show the calculation."
+  },
+  infant_prescribed_mode: {
+    uk: (v) => "<b>Розрахунок за призначенням лікаря.</b> Для віку до 3 місяців інструкції дають 15 мг/кг разово, максимум 60 мг/кг на добу, з інтервалом <b>не менше " + v.hours + " годин</b> — рідше, ніж у старших дітей. Дотримуйтесь того, що призначив лікар, а не цієї цифри, якщо вони різняться.",
+    en: (v) => "<b>Calculated under a doctor's prescription.</b> Under 3 months the leaflets give 15 mg/kg per dose, up to 60 mg/kg a day, at intervals of <b>at least " + v.hours + " hours</b> — less often than for older children. If this differs from what your doctor said, follow the doctor."
+  },
+  infant_weight_below_4: {
+    uk: (v) => "У віці до 3 місяців розрахунок можливий від маси " + v.kg + " кг — це нижня межа зареєстрованих форм. Для меншої ваги дозу визначає лікар індивідуально.",
+    en: (v) => "Under 3 months the calculation starts at " + v.kg + " kg, the lower limit of the licensed forms. Below that a doctor sets the dose individually."
+  },
+  infant_weight_unknown: {
+    uk: () => "Вкажіть вагу: у віці до 3 місяців доза рахується тільки за нею, а нижня межа зареєстрованих форм — 4 кг.",
+    en: () => "Enter the weight: under 3 months the dose depends on it alone, and the licensed forms start at 4 kg."
+  },
+  preterm_doctor_only: {
+    uk: () => "Для дитини, народженої раніше 37 тижнів, калькулятор дозу не рахує. Парацетамол у недоношених дозується за віком від зачаття, а не за вагою, і призначається лише лікарем.",
+    en: () => "For a baby born before 37 weeks we don't calculate. Paracetamol in preterm infants is dosed by post-conceptual age rather than weight, and only by a doctor."
+  },
+  ibu_infant_blocked: {
+    uk: () => "Ібупрофен у віці до 3 місяців не застосовують — це стосується і призначення лікаря теж. У цьому віці препаратом вибору є парацетамол.",
+    en: () => "Ibuprofen is not used under 3 months — that holds even with a prescription. Paracetamol is the medicine of choice at this age."
+  },
+  postvaccine_2m: {
+    uk: () => "Якщо температура з'явилася після щеплення у 2 місяці, це окрема ситуація: парацетамол у ній застосовують за рекомендацією лікаря чи медсестри, коротким курсом. Профілактично, «про всяк випадок», його не дають.",
+    en: () => "If the fever followed the 2-month vaccinations, that's a distinct case: paracetamol is used there on the advice of a doctor or nurse, briefly. It isn't given prophylactically, just in case."
   },
   ibu_under_6m: {
     uk: () => "Європейські інструкції дозволяють ібупрофен з 3 місяців, американські (AAP, FDA) — лише з 6. Якщо симптоми тримаються довше <b>24 годин</b> або після трьох доз — до лікаря негайно.",
@@ -1223,7 +1321,8 @@ return { UI: UI, NOTES: NOTES, noteText: noteText };
 <script>
 "use strict";
 const { DRUGS, GROUPS, FORM_LABEL, FORBIDDEN, COMBINED, LIMITS, sanitizeNumber,
-        computeDose, buildWarnings, checkGates, isBlocked, nextDoseTime } = window.Doza;
+        computeDose, buildWarnings, checkGates, isBlocked, nextDoseTime,
+        doseIntervalHours } = window.Doza;
 const { UI, noteText } = window.DozaI18n;
 
 const STORE = "kids-dose-calc-v2";
@@ -1239,6 +1338,9 @@ const state = {
   lang: "uk", theme: "light", tab: "dose",
   drug: "paracetamol", form: "syrup", presetIndex: 0,
   weight: "", age: "", ageUnit: "years",
+  /* навмисно не потрапляють у localStorage: підтвердження призначення
+     має даватися свідомо щоразу, а не діяти мовчки при наступному відкритті */
+  prescribedByDoctor: false, preterm: false,
   doses: []
 };
 
@@ -1320,7 +1422,8 @@ function input() {
   return {
     drug: state.drug, form: state.form,
     weightKg: weightNum(), ageMonths: ageMonths(),
-    concMg: p ? p.mg : NaN, concMl: p && p.ml ? p.ml : null
+    concMg: p ? p.mg : NaN, concMl: p && p.ml ? p.ml : null,
+    prescribedByDoctor: state.prescribedByDoctor, preterm: state.preterm
   };
 }
 
@@ -1340,6 +1443,10 @@ function paintChrome() {
   $("l-required").textContent = T.required;
   $("l-kg").textContent = T.kg;
   $("l-agenote").textContent = T.ageNote;
+  $("l-infant-title").textContent = T.infantTitle;
+  $("l-infant-hint").textContent = T.infantHint;
+  $("sw-prescribed").textContent = T.prescribed;
+  $("sw-preterm").textContent = T.preterm;
   $("l-drug").textContent = T.drugLabel;
   $("l-form").textContent = T.formLabel;
   $("l-attention1").textContent = T.attention;
@@ -1442,7 +1549,18 @@ function render() {
   $("a-ok").hidden = !aValid;
 
   /* червоні блоки: дані дитини окремо від препарату */
-  const childCodes = ["age_under_3m", "par_weight_below_4", "adult_ceiling"];
+  const infant = m !== null && m < LIMITS.doctorOnlyAgeMonths;
+  $("infant").hidden = !infant;
+  if (!infant && (state.prescribedByDoctor || state.preterm)) {
+    state.prescribedByDoctor = false;
+    state.preterm = false;
+    $("sw-prescribed").setAttribute("aria-pressed", "false");
+    $("sw-preterm").setAttribute("aria-pressed", "false");
+  }
+
+  const childCodes = ["age_under_3m", "par_weight_below_4", "adult_ceiling",
+                      "infant_prescribed_mode", "infant_weight_below_4", "infant_weight_unknown",
+                      "preterm_doctor_only", "ibu_infant_blocked", "postvaccine_2m"];
   const child = notes.filter((n) => childCodes.indexOf(n.code) > -1);
   const drugNotes = notes.filter((n) => childCodes.indexOf(n.code) === -1 && n.level !== "info");
   fillAlert($("alert-child"), $("alert-child-body"), child);
@@ -1476,7 +1594,10 @@ function render() {
   const rows = [];
   if (dose.unit === "ml") rows.push([T.rows.syringes, nf(dose.amount / 5)]);
   else rows.push([T.rows.whole, nf(dose.amount, 0) + " " + unit]);
-  rows.push([T.rows.interval, T.intervalText[state.drug]]);
+  rows.push([T.rows.interval,
+    doseIntervalHours(inp) === LIMITS.paracetamol.infantIntervalHours && inp.ageMonths !== null &&
+    inp.ageMonths < LIMITS.doctorOnlyAgeMonths
+      ? T.intervalInfant : T.intervalText[state.drug]]);
   rows.push([T.rows.maxDoses, String(dose.dosesPerDay)]);
   rows.push([T.rows.maxDaily, nf(dose.dailyLimitMg, 0) + " " + (state.lang === "uk" ? "мг" : "mg")]);
   rows.push([T.rows.range, nf(dose.minMg, 0) + "–" + nf(dose.maxMg, 0) + " " + (state.lang === "uk" ? "мг" : "mg")]);
@@ -1597,6 +1718,13 @@ $("clear").addEventListener("click", () => {
   state.weight = ""; state.age = ""; state.presetIndex = 0;
   $("weight").value = ""; $("age").value = "";
   paintPresets(); save(); render(); $("weight").focus();
+});
+[["sw-prescribed", "prescribedByDoctor"], ["sw-preterm", "preterm"]].forEach(([id, key]) => {
+  $(id).addEventListener("click", () => {
+    state[key] = !state[key];
+    $(id).setAttribute("aria-pressed", String(state[key]));
+    render();
+  });
 });
 $("undo").addEventListener("click", () => { state.doses.shift(); save(); renderNext(); });
 
